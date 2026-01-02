@@ -1,0 +1,117 @@
+<!-- ======== ESTADO GLOBAL ======== -->
+<div id="loadingText" class="loading-text">
+  <span>Cargando contenido</span><span class="dots"></span>
+</div>
+
+<div id="statusBar" class="status-bar" style="display:none;">
+  <span id="statusText">Esperando conexión...</span>
+</div>
+
+<!-- ======== FILTROS ======== -->
+<section class="filters">
+  <h3>Filtros de gestión</h3>
+  <form id="filterForm" class="filter-group" onsubmit="return false;">
+    <div class="filter-item">
+      <label for="filterDesde">Desde:</label>
+      <input type="date" id="filterDesde" name="filterDesde">
+    </div>
+
+    <div class="filter-item">
+      <label for="filterHasta">Hasta:</label>
+      <input type="date" id="filterHasta" name="filterHasta">
+    </div>
+
+    <div class="filter-item">
+      <label for="filterPais">País:</label>
+      <select id="filterPais" name="filterPais">
+        <option value="todos">Todos</option>
+        <option>Guatemala</option>
+        <option>República Dominicana</option>
+        <option>Honduras</option>
+        <option>Otro</option>
+      </select>
+    </div>
+
+    <div class="filter-item">
+      <label for="filterMedio">Canal:</label>
+      <select id="filterMedio" name="filterMedio">
+        <option value="todos">Todos</option>
+        <option>TikTok</option>
+        <option>Facebook</option>
+        <option>Instagram</option>
+        <option>Google Play Store</option>
+        <option>Zendesk</option>
+      </select>
+    </div>
+
+    <div class="filter-item">
+      <label for="filterSentimiento">Sentimiento:</label>
+      <select id="filterSentimiento" name="filterSentimiento">
+        <option value="todos">Todos</option>
+        <option>Positivo</option>
+        <option>Negativo</option>
+        <option>Neutral</option>
+      </select>
+    </div>
+
+    <button id="btnAplicarFiltros" type="button" class="btn-filtros">
+      <i class="fa-solid fa-filter"></i> Aplicar filtros
+    </button>
+  </form>
+</section>
+
+<!-- ======== RESUMEN EJECUTIVO ======== -->
+<section id="summary" class="summary-banner">
+  <span class="loading-text">Cargando resumen de gestiones...</span>
+</section>
+
+<!-- ======== MÉTRICAS ======== -->
+<section class="metrics">
+  <div class="metric">
+    <h3>Total Gestiones</h3>
+    <p id="metricTotal" class="metric-value">0</p>
+  </div>
+
+  <div class="metric positive">
+    <h3>Positivas</h3>
+    <p id="metricPositivas" class="metric-value">0%</p>
+  </div>
+
+  <div class="metric negative">
+    <h3>Negativas</h3>
+    <p id="metricNegativas" class="metric-value">0%</p>
+  </div>
+
+  <div class="metric neutral">
+    <h3>Neutrales</h3>
+    <p id="metricNeutrales" class="metric-value">0%</p>
+  </div>
+</section>
+
+<!-- ======== GRÁFICOS ======== -->
+<section class="charts">
+  <div class="chart-card">
+    <h4>Distribución por País</h4>
+    <canvas id="chartPais"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <h4>Distribución por Medio</h4>
+    <canvas id="chartMedio"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <h4>Sentimiento del Contacto</h4>
+    <canvas id="chartSentimiento"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <h4>Medidor de Sentimiento Global</h4>
+    <canvas id="chartMedidor"></canvas>
+  </div>
+
+  <div class="chart-card wide">
+    <h4>Distribución de Canales</h4>
+    <canvas id="chartCanales"></canvas>
+  </div>
+</section>

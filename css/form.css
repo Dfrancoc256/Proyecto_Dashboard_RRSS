@@ -1,0 +1,61 @@
+.gestion-form {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gestion-form h3 {
+  color: #2F66F5;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+fieldset {
+  border: 2px solid #E0E7FF;
+  border-radius: 10px;
+  padding: 16px;
+  background: #FAFBFF;
+}
+
+legend {
+  font-weight: 600;
+  color: #2F66F5;
+  padding: 0 8px;
+  font-size: 0.95rem;
+}
+
+label {
+  display: block;
+  font-weight: 500;
+  margin-top: 10px;
+  color: #333;
+}
+
+select, input, textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+button {
+  background: linear-gradient(90deg, #2F66F5, #54C0F2);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+button:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}

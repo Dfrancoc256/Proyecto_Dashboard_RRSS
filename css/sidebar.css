@@ -1,0 +1,124 @@
+/* =============================
+   SIDEBAR PRINCIPAL
+============================= */
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: linear-gradient(180deg, #2F66F5 0%, #54C0F2 100%);
+  color: white;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+/* Título */
+.sidebar h2 {
+  font-weight: 700;
+  font-size: 1.4rem;
+  text-align: center;
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+
+/* Contenedor de navegación */
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Botones */
+.sidebar button {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  text-align: left;
+  padding: 12px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-weight: 500;
+}
+
+/* Hover */
+.sidebar button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #F9B233;
+  transform: translateY(-1px);
+}
+
+/* Estado activo */
+.sidebar button.active {
+  background: rgba(255, 255, 255, 0.45);
+  color: #F9B233;
+  font-weight: 600;
+  box-shadow: inset 0 0 6px rgba(249, 178, 51, 0.3);
+}
+
+/* Botón de cierre de sesión */
+#btnLogout {
+  margin-top: auto;
+  background: #EF4444;
+  color: white;
+  font-weight: 600;
+  text-align: center;
+  transition: 0.25s ease;
+}
+
+#btnLogout:hover {
+  background: #DC2626;
+  transform: translateY(-1px);
+}
+
+/* =============================
+   CONTENIDO PRINCIPAL
+============================= */
+.main-content {
+  flex: 1;
+  background: #F4F6FA;
+  padding: 30px 40px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* =============================
+   RESPONSIVE
+============================= */
+@media (max-width: 768px) {
+  .sidebar {
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    height: auto;
+    width: 100%;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .sidebar nav {
+    flex-direction: row;
+    gap: 6px;
+    margin: 0;
+  }
+
+  .sidebar button {
+    font-size: 0.9rem;
+    padding: 10px 12px;
+  }
+
+  #btnLogout {
+    margin-top: 0;
+  }
+
+  .main-content {
+    padding: 15px 20px;
+  }
+}

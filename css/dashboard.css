@@ -1,0 +1,88 @@
+/*dashboard.css*/
+
+.sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, #2F66F5, #54C0F2);
+  color: white;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar h2 {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.sidebar select, .sidebar input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+}
+
+.sidebar button {
+  margin-top: 8px;
+  background: #F9B233;
+  color: #2B2B2B;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.main {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Métricas */
+.metrics {
+  display: flex;
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .metrics {
+    flex-direction: column;
+  }
+}
+.metric {
+  flex: 1;
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease-in-out;
+}
+.metric:hover { transform: translateY(-3px); }
+.metric h3 { color: #2F66F5; }
+.metric p { font-size: 1.5rem; font-weight: 600; margin-top: 8px; }
+
+/* Formulario */
+form {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+form input, form select, form textarea {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+form button {
+  background: linear-gradient(90deg, #2F66F5, #54C0F2);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+}

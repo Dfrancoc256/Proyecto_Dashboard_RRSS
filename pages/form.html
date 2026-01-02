@@ -1,0 +1,82 @@
+<form id="gestionForm" class="gestion-form">
+  <h3>Registrar nueva gestión</h3>
+
+  <fieldset>
+    <legend>🗺️ Identificación del contacto</legend>
+    <label>País</label>
+    <select name="pais" required>
+      <option value="">Selecciona un país</option>
+      <option>Guatemala</option>
+      <option>República Dominicana</option>
+      <option>Honduras</option>
+      <option>Otro</option>
+    </select>
+
+    <label>Red Social / Medio</label>
+    <select name="medio" required>
+      <option value="">Selecciona un medio</option>
+      <option>TikTok</option>
+      <option>Facebook</option>
+      <option>Instagram</option>
+      <option>Google Play Store</option>
+      <option>Zendesk</option>
+      <option>Linear</option>
+      <option>Llamada</option>
+      <option>Otro</option>
+    </select>
+
+    <label>Email del cliente</label>
+    <input type="email" name="email" placeholder="cliente@ejemplo.com" />
+  </fieldset>
+
+  <fieldset>
+    <legend>💬 Motivo del contacto</legend>
+    <label>Razón de contacto</label>
+    <select name="razon" required>
+      <option value="">Selecciona una razón</option>
+      <option>Info general</option>
+      <option>Pagos en proceso</option>
+      <option>Problemas con la app</option>
+      <option>Comentario positivo</option>
+      <option>Comentario negativo</option>
+      <option>Cuenta en atraso / saldo</option>
+      <option>Solicitud de finiquito</option>
+      <option>Soft-Reject</option>
+      <option>Hard-Reject</option>
+      <option>Intereses altos</option>
+      <option>Other</option>
+    </select>
+
+    <label>¿Qué comentario dejó el cliente?</label>
+    <textarea name="comentario_cliente" placeholder="Escribe aquí el mensaje del cliente"></textarea>
+  </fieldset>
+
+  <fieldset>
+    <legend>📞 Seguimiento / Ticket</legend>
+    <label>¿Necesitó creación de ticket?</label>
+    <select name="ticket" required>
+      <option value="">Selecciona una opción</option>
+      <option>Sí</option>
+      <option>No</option>
+      <option>Llamada</option>
+    </select>
+
+    <label>Link del ticket o llamada</label>
+    <input type="url" name="link_ticket" placeholder="https://..." />
+
+    <label>Comentarios / Notas</label>
+    <textarea name="notas" placeholder="Notas internas del agente"></textarea>
+  </fieldset>
+
+  <fieldset>
+    <legend>💡 Evaluación emocional</legend>
+    <label>Sentimiento del contacto</label>
+    <select name="sentimiento" required>
+      <option>Positivo</option>
+      <option>Negativo</option>
+      <option>Neutral</option>
+    </select>
+  </fieldset>
+
+  <button type="submit">Guardar gestión 🚀</button>
+</form>

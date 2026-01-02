@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | RRSS</title>
+  <link rel="stylesheet" href="../css/login.css" />
+  <script src="../data/config.js"></script>
+  <script src="../js/login.js" defer></script>
+</head>
+
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <h1>RRSS</h1>
+      <h3>Panel de Gestión</h3>
+
+      <form id="loginForm">
+        <label>Correo electrónico</label>
+        <input type="email" id="email" required />
+
+        <label>Contraseña</label>
+        <input type="password" id="password" required />
+
+        <div id="loadingLogin" style="display:none;">Verificando...</div>
+        <div id="errorMessage" style="display:none;color:red;"></div>
+
+        <button type="submit">Iniciar sesión</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

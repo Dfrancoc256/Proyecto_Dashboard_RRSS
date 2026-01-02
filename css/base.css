@@ -1,0 +1,33 @@
+/*base.css*/
+
+/* ======== ESTILO BASE GLOBAL ======== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ✅ El body ya NO usa flex aquí */
+body {
+  height: 100vh;
+  width: 100vw;
+  background: #F4F6FA;
+  color: #2B2B2B;
+  overflow-x: hidden;
+  overflow-y: auto;/* evita scroll lateral */
+}
+
+button {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}

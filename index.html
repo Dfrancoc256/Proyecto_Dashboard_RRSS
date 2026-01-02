@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard RRSS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/sidebar.css" />
+  <link rel="stylesheet" href="css/home.css" />
+  <link rel="stylesheet" href="css/form.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <div id="authChecking">Verificando sesión...</div>
+  <div id="dashboardContainer" style="display:none;">
+    <aside class="sidebar">
+      <h2>RRSS</h2>
+      <nav>
+        <button data-page="home">Inicio</button>
+        <button data-page="form">Nueva Gestión</button>
+        <button id="btnLogout" style="background:#F87171;color:#fff;">Cerrar sesión</button>
+      </nav>
+    </aside>
+
+    <main id="content"></main>
+  </div>
+
+  <script src="data/config.js"></script>
+  <script src="js/sidebar.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const usuario = localStorage.getItem("usuarioActivo");
+      const auth = document.getElementById("authChecking");
+      const dash = document.getElementById("dashboardContainer");
+
+      if (!usuario) {
+        auth.textContent = "Redirigiendo...";
+        setTimeout(() => window.location.href = "pages/login.html", 800);
+        return;
+      }
+
+      auth.style.display = "none";
+      dash.style.display = "flex";
+
+      document.getElementById("btnLogout").addEventListener("click", () => {
+        localStorage.removeItem("usuarioActivo");
+        window.location.href = "pages/login.html";
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+/* ======== LOGIN GENERAL ======== */
+body {
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #2f66f5, #54c0f2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+}
+
+/* ======== CONTENEDOR DEL LOGIN ======== */
+.login-container {
+  background: white;
+  border-radius: 18px;
+  padding: 45px 40px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  animation: fadeInUp 0.8s ease;
+}
+
+/* ======== TÍTULO PRINCIPAL ======== */
+.login-container h1 {
+  color: #2f66f5;
+  margin-bottom: 8px;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ======== SUBTÍTULO ======== */
+.login-container h3 {
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 25px;
+}
+
+/* ======== LABELS ======== */
+.login-container label {
+  display: block;
+  text-align: left;
+  font-weight: 500;
+  color: #333;
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+/* ======== INPUTS ======== */
+.login-container input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d0d7e2;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-container input:focus {
+  outline: none;
+  border-color: #f9b233;
+  box-shadow: 0 0 6px rgba(249, 178, 51, 0.4);
+}
+
+/* ======== BOTÓN ======== */
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 25px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f9b233, #ffd166);
+  color: #333;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(249, 178, 51, 0.3);
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(249, 178, 51, 0.45);
+  opacity: 0.95;
+}
+
+/* ======== PIE DE PÁGINA ======== */
+.footer-text {
+  margin-top: 25px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+/* ======== ANIMACIÓN ======== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
