@@ -1,11 +1,14 @@
 let datosGlobales = [];
 let charts = [];
 
-document.addEventListener("DOMContentLoaded", async () => {
+export async function initCharts() {
   await cargarDatos();
 
-  document.getElementById("btnAplicarFiltros").addEventListener("click", aplicarFiltros);
-});
+  const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
+  if (btnAplicarFiltros) {
+    btnAplicarFiltros.addEventListener("click", aplicarFiltros);
+  }
+}
 
 async function cargarDatos() {
   const res = await obtenerDatosDashboard();

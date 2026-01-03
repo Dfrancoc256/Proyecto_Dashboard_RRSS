@@ -14,7 +14,7 @@ function loadPage(page) {
     .then(html => {
       document.getElementById("content").innerHTML = html;
       if (page === "home") {
-        import("./charts.js");
+        import("./charts.js").then(module => module.initCharts());
       } else if (page === "form") {
         import("./form.js");
       }
