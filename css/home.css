@@ -38,6 +38,11 @@
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
 }
 
+/* (Opcional) si crece el menú, permite scroll */
+.sidebar {
+  overflow-y: auto;
+}
+
 .sidebar h2 {
   margin-bottom: 20px;
   font-weight: 700;
@@ -67,13 +72,17 @@
   background: #ffffff44;
 }
 
-/* === CONTENIDO PRINCIPAL === */
-.main-content {
+/* === CONTENIDO PRINCIPAL ===
+   ✅ Tu HTML usa <main id="content">
+*/
+#content {
   flex: 1;
   background: #f8f9fc;
   padding: 20px 40px;
-  overflow-y: auto;
+  overflow-y: auto;     /* ✅ scroll aquí */
+  overflow-x: hidden;
   box-sizing: border-box;
+  height: 100vh;
 }
 
 /* === RESPONSIVE SIDEBAR === */
@@ -87,28 +96,52 @@
     flex-direction: row;
     justify-content: space-around;
     box-shadow: none;
+    overflow-y: visible;
   }
 
-  .main-content {
+  #content {
     padding: 10px 20px;
+    height: auto;
+    flex: 1;
   }
 }
 
 /* ======== BARRA DE ESTADO ======== */
+/* Base */
 .status-bar {
-  background: linear-gradient(90deg, #2f66f5, #54c0f2);
+  display: flex;              /* ✅ para centrar bonito */
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
   color: white;
   text-align: center;
-  padding: 8px 0;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   margin-bottom: 15px;
-  box-shadow: 0 4px 10px rgba(47, 102, 245, 0.2);
-  animation: fadeIn 0.6s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.35s ease;
+  font-size: 0.95rem;
+}
+
+/* ✅ Estados */
+.status-bar.ok {
+  background: linear-gradient(90deg, #10B981, #34D399); /* verde */
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25);
+}
+
+.status-bar.info {
+  background: linear-gradient(90deg, #2f66f5, #54c0f2); /* azul */
+  box-shadow: 0 6px 18px rgba(47, 102, 245, 0.25);
+}
+
+.status-bar.error {
+  background: linear-gradient(90deg, #EF4444, #F87171); /* rojo */
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.25);
 }
 
 #statusText {
-  font-weight: 500;
-  letter-spacing: 0.3px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
 /* ======== FILTROS ======== */
