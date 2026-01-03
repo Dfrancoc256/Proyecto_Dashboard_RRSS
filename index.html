@@ -4,24 +4,47 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard RRSS</title>
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- ✅ ICONOS -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  />
+
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/sidebar.css" />
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/form.css" />
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
   <div id="authChecking">Verificando sesión...</div>
+
   <div id="dashboardContainer" style="display:none;">
     <aside class="sidebar">
       <h2>RRSS</h2>
+
       <nav>
-        <button data-page="home">Inicio</button>
-        <button data-page="form">Nueva Gestión</button>
-        <button id="btnLogout" style="background:#F87171;color:#fff;">Cerrar sesión</button>
+        <button data-page="home">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Inicio</span>
+        </button>
+
+        <button data-page="form">
+          <i class="fa-solid fa-plus-circle"></i>
+          <span>Nueva Gestión</span>
+        </button>
       </nav>
+
+      <!-- ✅ LOGOUT SIEMPRE ABAJO -->
+      <button id="btnLogout">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Cerrar sesión</span>
+      </button>
     </aside>
 
     <main id="content"></main>

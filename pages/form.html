@@ -1,65 +1,125 @@
 <form id="gestionForm" class="gestion-form">
   <h3>Registrar nueva gestión</h3>
 
+  <!-- =========================
+       🗺️ Identificación
+  ========================== -->
   <fieldset>
     <legend>🗺️ Identificación del contacto</legend>
+
+    <!-- ✅ PAÍS -->
     <label>País</label>
-    <select name="pais" required>
-      <option value="">Selecciona un país</option>
-      <option>Guatemala</option>
-      <option>República Dominicana</option>
-      <option>Honduras</option>
-      <option>Otro</option>
-    </select>
+    <div class="combo" data-name="pais">
+      <input type="text" class="combo-input" placeholder="Selecciona un país..." required />
+      <button type="button" class="combo-btn">▾</button>
+      <ul class="combo-list">
+        <li>Guatemala</li>
+        <li>República Dominicana</li>
+        <li>Honduras</li>
+        <li>Otro</li>
+      </ul>
+    </div>
 
+    <div id="paisOtroWrap" style="display:none;">
+      <label>Especifique país</label>
+      <input type="text" id="paisOtro" name="pais_otro" placeholder="Escribe el país..." />
+    </div>
+
+    <!-- ✅ MEDIO -->
     <label>Red Social / Medio</label>
-    <select name="medio" required>
-      <option value="">Selecciona un medio</option>
-      <option>TikTok</option>
-      <option>Facebook</option>
-      <option>Instagram</option>
-      <option>Google Play Store</option>
-      <option>Zendesk</option>
-      <option>Linear</option>
-      <option>Llamada</option>
-      <option>Otro</option>
-    </select>
+    <div class="combo" data-name="medio">
+      <input type="text" class="combo-input" placeholder="Selecciona un medio..." required />
+      <button type="button" class="combo-btn">▾</button>
+      <ul class="combo-list">
+        <li>TikTok</li>
+        <li>Facebook</li>
+        <li>Instagram</li>
+        <li>Google Play Store</li>
+        <li>Zendesk</li>
+        <li>Linear</li>
+        <li>Llamada</li>
+        <li>Otro</li>
+      </ul>
+    </div>
 
-    <label>Email del cliente</label>
-    <input type="email" name="email" placeholder="cliente@ejemplo.com" />
+    <div id="medioOtroWrap" style="display:none;">
+      <label>Especifique medio</label>
+      <input type="text" id="medioOtro" name="medio_otro" placeholder="Escribe el medio..." />
+    </div>
+
+    <!-- ✅ EMAIL (AGENTE) -->
+    <label>Correo del agente</label>
+    <input
+      type="email"
+      name="email"
+      id="emailAgente"
+      placeholder="tu_correo@gmail.com"
+      autocomplete="email"
+      required
+    />
+    <small style="display:block;margin-top:6px;opacity:.75;">
+      Se carga automáticamente con el usuario que inició sesión (puedes editarlo).
+    </small>
   </fieldset>
 
+  <!-- =========================
+       💬 Motivo del contacto
+  ========================== -->
   <fieldset>
     <legend>💬 Motivo del contacto</legend>
+
+    <!-- ✅ RAZÓN -->
     <label>Razón de contacto</label>
-    <select name="razon" required>
-      <option value="">Selecciona una razón</option>
-      <option>Info general</option>
-      <option>Pagos en proceso</option>
-      <option>Problemas con la app</option>
-      <option>Comentario positivo</option>
-      <option>Comentario negativo</option>
-      <option>Cuenta en atraso / saldo</option>
-      <option>Solicitud de finiquito</option>
-      <option>Soft-Reject</option>
-      <option>Hard-Reject</option>
-      <option>Intereses altos</option>
-      <option>Other</option>
-    </select>
+    <div class="combo" data-name="razon">
+      <input type="text" class="combo-input" placeholder="Selecciona una razón..." required />
+      <button type="button" class="combo-btn">▾</button>
+      <ul class="combo-list">
+        <li>Info general</li>
+        <li>Pagos en proceso</li>
+        <li>Problemas con la app</li>
+        <li>Comentario positivo</li>
+        <li>Comentario negativo</li>
+        <li>Cuenta en atraso / saldo</li>
+        <li>Solicitud de finiquito</li>
+        <li>Soft-Reject</li>
+        <li>Hard-Reject</li>
+        <li>Intereses altos</li>
+        <li>Otro</li>
+      </ul>
+    </div>
+
+    <div id="razonOtroWrap" style="display:none;">
+      <label>Especifique razón</label>
+      <input type="text" id="razonOtro" name="razon_otro" placeholder="Escribe la razón..." />
+    </div>
 
     <label>¿Qué comentario dejó el cliente?</label>
     <textarea name="comentario_cliente" placeholder="Escribe aquí el mensaje del cliente"></textarea>
   </fieldset>
 
+  <!-- =========================
+       📞 Seguimiento / Ticket
+  ========================== -->
   <fieldset>
     <legend>📞 Seguimiento / Ticket</legend>
+
+    <!-- ✅ TICKET -->
     <label>¿Necesitó creación de ticket?</label>
-    <select name="ticket" required>
-      <option value="">Selecciona una opción</option>
-      <option>Sí</option>
-      <option>No</option>
-      <option>Llamada</option>
-    </select>
+    <div class="combo" data-name="ticket">
+      <input type="text" class="combo-input" placeholder="Selecciona una opción..." required />
+      <button type="button" class="combo-btn">▾</button>
+      <ul class="combo-list">
+        <li>Sí</li>
+        <li>No</li>
+        <li>Llamada</li>
+        <li>Otro</li>
+      </ul>
+    </div>
+
+    <div id="ticketOtroWrap" style="display:none;">
+      <label>Especifique ticket</label>
+      <input type="text" id="ticketOtro" name="ticket_otro" placeholder="Escribe..." />
+    </div>
 
     <label>Link del ticket o llamada</label>
     <input type="url" name="link_ticket" placeholder="https://..." />
@@ -68,13 +128,18 @@
     <textarea name="notas" placeholder="Notas internas del agente"></textarea>
   </fieldset>
 
+  <!-- =========================
+       💡 Evaluación emocional
+  ========================== -->
   <fieldset>
     <legend>💡 Evaluación emocional</legend>
+
     <label>Sentimiento del contacto</label>
-    <select name="sentimiento" required>
-      <option>Positivo</option>
-      <option>Negativo</option>
-      <option>Neutral</option>
+    <select name="sentimiento" id="sentimiento" required>
+      <option value="">Seleccione una opción</option>
+      <option value="Positivo">Positivo</option>
+      <option value="Negativo">Negativo</option>
+      <option value="Neutral">Neutral</option>
     </select>
   </fieldset>
 

@@ -1,3 +1,5 @@
+/* form.css */
+
 .gestion-form {
   background: #fff;
   padding: 24px;
@@ -35,27 +37,142 @@ label {
   color: #333;
 }
 
-select, input, textarea {
+/* ✅ Inputs base */
+select,
+input,
+textarea {
   width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #D0D7E2;
   margin-top: 6px;
   font-size: 0.9rem;
+  background: #F8FAFC;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .05s ease;
 }
 
-button {
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+select:focus,
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #2F66F5;
+  box-shadow: 0 0 0 4px rgba(47, 102, 245, 0.12);
+}
+
+/* ✅ Botón submit (mantiene tu estilo Vana) */
+button[type="submit"] {
   background: linear-gradient(90deg, #2F66F5, #54C0F2);
   color: #fff;
   border: none;
   padding: 12px;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-weight: 700;
   cursor: pointer;
   transition: 0.2s ease;
 }
 
-button:hover {
-  opacity: 0.9;
+button[type="submit"]:hover {
+  opacity: 0.95;
   transform: translateY(-2px);
+}
+
+/* ===========================
+   ✅ COMBO (select + búsqueda)
+=========================== */
+.combo {
+  position: relative;
+  width: 100%;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.combo-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #D0D7E2;
+  background: #F8FAFC;
+  font-size: 0.9rem;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.combo-input:focus {
+  outline: none;
+  border-color: #2F66F5;
+  box-shadow: 0 0 0 4px rgba(47, 102, 245, 0.12);
+}
+
+.combo-btn {
+  flex: 0 0 44px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: #2F66F5;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.combo-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+/* Lista desplegable */
+.combo-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #fff;
+  border: 1px solid #D0D7E2;
+  border-radius: 12px;
+  list-style: none;
+  padding: 6px;
+  margin: 0;
+  max-height: 190px;
+  overflow: auto;
+  display: none;
+  z-index: 50;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.10);
+}
+
+.combo-list li {
+  padding: 10px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #222;
+  transition: background .15s ease, transform .05s ease;
+}
+
+.combo-list li:hover {
+  background: #EEF4FF;
+}
+
+/* Scroll barra dentro del dropdown */
+.combo-list::-webkit-scrollbar {
+  width: 8px;
+}
+.combo-list::-webkit-scrollbar-thumb {
+  background: rgba(47, 102, 245, 0.25);
+  border-radius: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .gestion-form {
+    padding: 18px;
+  }
+  fieldset {
+    padding: 14px;
+  }
 }
