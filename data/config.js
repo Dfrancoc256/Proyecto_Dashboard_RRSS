@@ -1,13 +1,15 @@
 // =============================
 // 🌐 CONFIGURACIÓN GLOBAL
 // =============================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmqBotfgEFuh5EH5A97SKpqsi9v5nNYjkpi2d8v42xM_hjw4XImRcP5BSCMVL_lz6Bxg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyzseoP2EnZ1YLXtRf7iGvzFpH1krvdrZp12smi3C3ebFiLCdjRUliU2L9mF7tly6-tg/exec";
 
 // =============================
 // 🔐 LOGIN
 // =============================
 async function realizarLogin(correo, password) {
-  const url = `${GOOGLE_SCRIPT_URL}?action=login&correo=${encodeURIComponent(correo)}&password=${encodeURIComponent(password)}`;
+  const url = `${GOOGLE_SCRIPT_URL}?action=login&correo=${encodeURIComponent(
+    correo
+  )}&password=${encodeURIComponent(password)}`;
   const res = await fetch(url);
   return await res.json();
 }
@@ -21,13 +23,16 @@ async function obtenerDatosDashboard() {
 }
 
 // =============================
-// 💾 GUARDAR GESTIÓN
+// 💾 GUARDAR GESTIÓN (SIN JSON, SIN CORS)
 // =============================
 async function guardarGestion(gestionData) {
+  const formBody = new URLSearchParams();
+  Object.entries(gestionData).forEach(([k, v]) => formBody.append(k, v ?? ""));
+
   const res = await fetch(GOOGLE_SCRIPT_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(gestionData),
+    body: formBody, // 👈 sin headers => sin preflight
   });
+
   return await res.json();
 }

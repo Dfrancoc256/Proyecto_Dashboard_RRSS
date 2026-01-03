@@ -1,6 +1,9 @@
 let datosGlobales = [];
 let charts = [];
 
+const normalizarTexto = (valor) => String(valor ?? "").trim().toLowerCase();
+const obtenerSentimiento = (row) => row.sentimiento ?? row.sentimientos ?? "";
+
 export async function initCharts() {
   await cargarDatos();
 
@@ -22,18 +25,18 @@ async function cargarDatos() {
 function aplicarFiltros() {
   const desde = document.getElementById("filterDesde").value;
   const hasta = document.getElementById("filterHasta").value;
-  const pais = document.getElementById("filterPais").value.toLowerCase();
-  const medio = document.getElementById("filterMedio").value.toLowerCase();
-  const sentimiento = document.getElementById("filterSentimiento").value.toLowerCase();
+  const pais = normalizarTexto(document.getElementById("filterPais").value);
+  const medio = normalizarTexto(document.getElementById("filterMedio").value);
+  const sentimiento = normalizarTexto(document.getElementById("filterSentimiento").value);
 
   let filtrados = datosGlobales.filter(item => {
     let valido = true;
 
     if (desde && new Date(item.time) < new Date(desde)) valido = false;
     if (hasta && new Date(item.time) > new Date(hasta)) valido = false;
-    if (pais !== "todos" && (item.pais || "").toLowerCase() !== pais) valido = false;
-    if (medio !== "todos" && (item.medio || "").toLowerCase() !== medio) valido = false;
-    if (sentimiento !== "todos" && (item.sentimientos || "").toLowerCase() !== sentimiento) valido = false;
+    if (pais !== "todos" && normalizarTexto(item.pais) !== pais) valido = false;
+    if (medio !== "todos" && normalizarTexto(item.medio) !== medio) valido = false;
+    if (sentimiento !== "todos" && normalizarTexto(obtenerSentimiento(item)) !== sentimiento) valido = false;
 
     return valido;
   });
@@ -51,9 +54,9 @@ function renderDashboard(data) {
 // ======== MÉTRICAS ========
 function renderMetrics(data) {
   const total = data.length;
-  const positivas = data.filter(d => (d.sentimientos || "").toLowerCase() === "positivo").length;
-  const negativas = data.filter(d => (d.sentimientos || "").toLowerCase() === "negativo").length;
-  const neutrales = data.filter(d => (d.sentimientos || "").toLowerCase() === "neutral").length;
+  const positivas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "positivo").length;
+  const negativas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
+  const neutrales = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;
 
   const positivasPct = total ? ((positivas / total) * 100).toFixed(1) : 0;
   const negativasPct = total ? ((negativas / total) * 100).toFixed(1) : 0;
@@ -90,7 +93,7 @@ function renderCharts(data) {
 
   const pais = contarPorCampo(data, "pais");
   const medio = contarPorCampo(data, "medio");
-  const sentimiento = contarPorCampo(data, "sentimientos");
+  const sentimiento = contarPorSentimiento(data);
 
   const colors = {
     azul: "#2F66F5",
@@ -112,7 +115,16 @@ function renderCharts(data) {
 function contarPorCampo(data, campo) {
   const conteo = {};
   data.forEach(row => {
-    const valor = row[campo] || "Sin dato";
+    const valor = String(row[campo] ?? "Sin dato").trim() || "Sin dato";
+    conteo[valor] = (conteo[valor] || 0) + 1;
+  });
+  return conteo;
+}
+
+function contarPorSentimiento(data) {
+  const conteo = {};
+  data.forEach(row => {
+    const valor = String(obtenerSentimiento(row) ?? "Sin dato").trim() || "Sin dato";
     conteo[valor] = (conteo[valor] || 0) + 1;
   });
   return conteo;
@@ -167,9 +179,9 @@ function crearGraficoGauge(data, id) {
   const ctx = document.getElementById(id);
   if (!ctx) return;
 
-  const positivas = data.filter(d => (d.sentimientos || "").toLowerCase() === "positivo").length;
-  const neutrales = data.filter(d => (d.sentimientos || "").toLowerCase() === "neutral").length;
-  const negativas = data.filter(d => (d.sentimientos || "").toLowerCase() === "negativo").length;
+  const positivas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "positivo").length;
+  const neutrales = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;
+  const negativas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
 
   return new Chart(ctx, {
     type: "doughnut",
