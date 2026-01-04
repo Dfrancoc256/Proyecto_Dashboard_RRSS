@@ -1,7 +1,7 @@
 // =============================
 // 🌐 CONFIGURACIÓN GLOBAL
 // =============================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyzseoP2EnZ1YLXtRf7iGvzFpH1krvdrZp12smi3C3ebFiLCdjRUliU2L9mF7tly6-tg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/a/macros/vana.gt/s/AKfycbzT3CxzWImiNNb3mlxEK-09F8l0cBDoS55-H6kEreaJ8O5Dc9KmZiVhNDJb26KVRivD9Q/exec";
 
 // =============================
 // 🔐 LOGIN
