@@ -1,3 +1,4 @@
+/*js/chats.js */
 let datosGlobales = [];
 let charts = [];
 
