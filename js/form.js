@@ -1,5 +1,5 @@
 // form.js (módulo cargado desde sidebar.js)
-// ✅ Guardar con FormData (sin preflight)
+// ✅ Guardar por API /api/responses (JSON)
 
 function getUsuarioCorreo() {
   try {
@@ -191,23 +191,29 @@ document.addEventListener("submit", async (e) => {
     return;
   }
 
+  // ✅ Convertir FormData a objeto (para enviar JSON al backend)
+  const obj = {};
+  for (const [k, v] of formData.entries()) obj[k] = v;
+
   try {
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
+    const response = await fetch("/api/responses", {
       method: "POST",
-      body: formData, // ✅ sin headers => sin preflight
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ object: obj }),
     });
 
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
 
-    if (result.status === "success") {
-      alert("✅ Gestión guardada correctamente en Google Sheets");
+    if (response.ok && result.ok === true) {
+      alert("✅ Gestión guardada correctamente");
       form.reset();
 
       // Re-poner email del agente y rearmar combos/otros
       setDefaultEmailAgente();
       prepararForm();
     } else {
-      alert("⚠️ Error: " + (result.message || "No se pudo guardar"));
+      alert("⚠️ Error: " + (result.message || result.error || "No se pudo guardar"));
     }
   } catch (err) {
     alert("❌ Error al guardar: " + err.message);
