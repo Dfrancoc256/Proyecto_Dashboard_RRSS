@@ -1,26 +1,21 @@
 // =============================
-// 📊 LECTURA DE DATOS DESDE GOOGLE SHEETS
+// 📊 LECTURA DE DATOS DESDE EL BACKEND (/api)
 // =============================
 
-// Usa directamente la constante global GOOGLE_SCRIPT_URL desde config.js
-async function obtenerDatosDesdeSheets() {
+// Usa la función global obtenerDatosDashboard() definida en data/config.js
+async function obtenerDatosDesdeBackend() {
   try {
-    const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=get`);
+    const json = await obtenerDatosDashboard();
 
-    if (!response.ok) {
-      throw new Error(`Error HTTP ${response.status}`);
+    if (json?.status === "success") {
+      const lista = json?.data?.data ?? json?.data ?? [];
+      return Array.isArray(lista) ? lista : [];
     }
 
-    const json = await response.json();
-
-    if (json.status !== "success" || !json.data) {
-      console.warn("⚠️ Respuesta inesperada de Google Script:", json);
-      return [];
-    }
-
-    return json.data;
+    console.warn("⚠️ Respuesta inesperada del backend:", json);
+    return [];
   } catch (err) {
-    console.error("❌ Error al leer datos de Sheets:", err);
+    console.error("❌ Error al leer datos desde backend:", err);
     return [];
   }
 }
