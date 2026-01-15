@@ -1,8 +1,7 @@
-   // =============================
+// =============================
 // 📊 LECTURA DE DATOS DESDE EL BACKEND (/api)
 // =============================
 
-// Usa la función global obtenerDatosDashboard() desde data/config.js
 async function obtenerDatosDesdeBackend() {
   try {
     const json = await obtenerDatosDashboard();
