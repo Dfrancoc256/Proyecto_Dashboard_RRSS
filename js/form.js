@@ -1,5 +1,5 @@
 // form.js (módulo cargado desde sidebar.js)
-// ✅ Guardar por API /api/responses (JSON)
+// ✅ Guarda por API /api/responses (JSON) -> backend Node/Express
 
 function getUsuarioCorreo() {
   try {
@@ -39,14 +39,10 @@ function setHidden(form, name, value) {
 
 // ✅ Combobox: dropdown + filtro por escritura
 function initCombo(combo) {
-  // Evitar doble inicialización si el módulo se recarga dinámicamente
-  if (combo.dataset.inited === "1") return;
-  combo.dataset.inited = "1";
-
   const input = combo.querySelector(".combo-input");
   const btn = combo.querySelector(".combo-btn");
   const list = combo.querySelector(".combo-list");
-  const items = Array.from(list?.querySelectorAll("li") || []);
+  const items = Array.from(list.querySelectorAll("li"));
 
   if (!input || !btn || !list) return;
 
@@ -122,14 +118,11 @@ function setupOtros() {
 
     if (!input || !wrap || !otherInput) return;
 
-    // Evitar duplicar listeners si se re-renderiza
-    if (combo.dataset.otrosBound === "1") return;
-    combo.dataset.otrosBound = "1";
-
     const toggle = () => {
       if (esOtro(input.value)) {
         wrap.style.display = "block";
         otherInput.required = true;
+        otherInput.focus();
       } else {
         wrap.style.display = "none";
         otherInput.required = false;
@@ -148,94 +141,84 @@ function prepararForm() {
   if (!form) return;
 
   setDefaultEmailAgente();
-
-  // init combos
   document.querySelectorAll(".combo").forEach(initCombo);
-
-  // setup "Otro"
   setupOtros();
 }
 
 // Se prepara cuando el módulo se importa
 prepararForm();
 
-// ✅ SUBMIT (registrado una sola vez)
-if (!window.__gestionFormSubmitBound) {
-  window.__gestionFormSubmitBound = true;
+// ✅ SUBMIT
+document.addEventListener("submit", async (e) => {
+  if (!e.target || e.target.id !== "gestionForm") return;
 
-  document.addEventListener("submit", async (e) => {
-    if (!e.target || e.target.id !== "gestionForm") return;
+  e.preventDefault();
+  const form = e.target;
 
-    e.preventDefault();
-    const form = e.target;
+  if (!validarSentimiento(form)) return;
 
-    if (!validarSentimiento(form)) return;
+  // ✅ tomar valores de combos y guardarlos en hidden inputs
+  document.querySelectorAll(".combo").forEach(combo => {
+    const name = combo.getAttribute("data-name");
+    const val = combo.querySelector(".combo-input")?.value || "";
+    setHidden(form, name, val);
+  });
 
-    // ✅ tomar valores de combos y guardarlos en hidden inputs
-    document.querySelectorAll(".combo").forEach(combo => {
-      const name = combo.getAttribute("data-name");
-      const val = combo.querySelector(".combo-input")?.value || "";
-      setHidden(form, name, val);
+  const formData = new FormData(form);
+
+  // ✅ Si es "Otro", reemplazar por el texto escrito
+  const pais = formData.get("pais");
+  const medio = formData.get("medio");
+  const razon = formData.get("razon");
+  const ticket = formData.get("ticket");
+
+  if (esOtro(pais)) formData.set("pais", String(formData.get("pais_otro") || "").trim() || "Otro");
+  if (esOtro(medio)) formData.set("medio", String(formData.get("medio_otro") || "").trim() || "Otro");
+  if (esOtro(razon)) formData.set("razon", String(formData.get("razon_otro") || "").trim() || "Otro");
+  if (esOtro(ticket)) formData.set("ticket", String(formData.get("ticket_otro") || "").trim() || "Otro");
+
+  // ✅ Email del agente obligatorio
+  const emailActual = String(formData.get("email") || "").trim();
+  if (!emailActual) {
+    alert("⚠️ El correo del agente (Email) es obligatorio.");
+    const emailInput = document.getElementById("emailAgente") || form.querySelector('input[name="email"]');
+    if (emailInput) emailInput.focus();
+    return;
+  }
+
+  // ✅ Construir payload limpio (con 100% match a tus headers en Sheets)
+  // Headers en tu Sheet: Time, Pais, Medio, Razon de contacto, ¿Necesitó ticket?, Comentario cliente, Link ticket, Email, Notas, Sentimientos
+  const payload = {
+    "Pais": String(formData.get("pais") || "").trim(),
+    "Medio": String(formData.get("medio") || "").trim(),
+    "Razon de contacto": String(formData.get("razon") || "").trim(),
+    "¿Necesitó ticket?": String(formData.get("ticket") || "").trim(),
+    "Comentario cliente": String(formData.get("comentario_cliente") || "").trim(),
+    "Link ticket": String(formData.get("link_ticket") || "").trim(),
+    "Email": String(formData.get("email") || "").trim(),
+    "Notas": String(formData.get("notas") || "").trim(),
+    "Sentimientos": String(formData.get("sentimiento") || "").trim(),
+    // Time NO se manda: el backend lo llena si ve el header "Time"
+  };
+
+  try {
+    const response = await fetch("/api/responses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ object: payload }),
     });
 
-    const formData = new FormData(form);
+    const result = await response.json().catch(() => ({}));
 
-    // ✅ Si es "Otro", reemplazar por el texto escrito
-    const pais = formData.get("pais");
-    const medio = formData.get("medio");
-    const razon = formData.get("razon");
-    const ticket = formData.get("ticket");
-
-    if (esOtro(pais)) formData.set("pais", String(formData.get("pais_otro") || "").trim() || "Otro");
-    if (esOtro(medio)) formData.set("medio", String(formData.get("medio_otro") || "").trim() || "Otro");
-    if (esOtro(razon)) formData.set("razon", String(formData.get("razon_otro") || "").trim() || "Otro");
-    if (esOtro(ticket)) formData.set("ticket", String(formData.get("ticket_otro") || "").trim() || "Otro");
-
-    // ✅ Email del agente obligatorio
-    const emailActual = String(formData.get("email") || "").trim();
-    if (!emailActual) {
-      alert("⚠️ El correo del agente (Email) es obligatorio.");
-      const emailInput = document.getElementById("emailAgente") || form.querySelector('input[name="email"]');
-      if (emailInput) emailInput.focus();
-      return;
+    if (response.ok && result.ok === true) {
+      alert("✅ Gestión guardada correctamente");
+      form.reset();
+      setDefaultEmailAgente();
+      prepararForm();
+    } else {
+      alert("⚠️ Error: " + (result.message || result.error || "No se pudo guardar"));
     }
-
-    // ✅ Construir payload limpio (solo lo que normalmente existe en tu hoja)
-    // Si tu hoja tiene más headers, puedes agregar aquí más campos.
-    const payload = {
-      pais: String(formData.get("pais") || "").trim(),
-      medio: String(formData.get("medio") || "").trim(),
-      razon: String(formData.get("razon") || "").trim(),
-      ticket: String(formData.get("ticket") || "").trim(),
-      comentario_cliente: String(formData.get("comentario_cliente") || "").trim(),
-      link_ticket: String(formData.get("link_ticket") || "").trim(),
-      email: String(formData.get("email") || "").trim(),
-      notas: String(formData.get("notas") || "").trim(),
-      sentimiento: String(formData.get("sentimiento") || "").trim(),
-    };
-
-    try {
-      const response = await fetch("/api/responses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ object: payload }),
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (response.ok && result.ok === true) {
-        alert("✅ Gestión guardada correctamente");
-        form.reset();
-
-        // Re-poner email del agente y rearmar combos/otros
-        setDefaultEmailAgente();
-        prepararForm();
-      } else {
-        alert("⚠️ Error: " + (result.message || result.error || "No se pudo guardar"));
-      }
-    } catch (err) {
-      alert("❌ Error al guardar: " + err.message);
-    }
-  });
-}
+  } catch (err) {
+    alert("❌ Error al guardar: " + err.message);
+  }
+});
