@@ -1,11 +1,11 @@
 // form.js (módulo cargado desde sidebar.js)
-// ✅ Guarda por API /api/responses (JSON) -> backend Node/Express
+// ✅ Guardar por API /api/responses (JSON)
+// ✅ Envía payload con llaves IGUALES a los headers de Google Sheets
 
 function getUsuarioCorreo() {
   try {
     const raw = localStorage.getItem("usuarioActivo");
     if (!raw) return "";
-
     if (raw.includes("{")) {
       const obj = JSON.parse(raw);
       return obj?.correo || obj?.email || obj?.usuario?.correo || "";
@@ -145,7 +145,6 @@ function prepararForm() {
   setupOtros();
 }
 
-// Se prepara cuando el módulo se importa
 prepararForm();
 
 // ✅ SUBMIT
@@ -172,10 +171,10 @@ document.addEventListener("submit", async (e) => {
   const razon = formData.get("razon");
   const ticket = formData.get("ticket");
 
-  if (esOtro(pais)) formData.set("pais", String(formData.get("pais_otro") || "").trim() || "Otro");
-  if (esOtro(medio)) formData.set("medio", String(formData.get("medio_otro") || "").trim() || "Otro");
-  if (esOtro(razon)) formData.set("razon", String(formData.get("razon_otro") || "").trim() || "Otro");
-  if (esOtro(ticket)) formData.set("ticket", String(formData.get("ticket_otro") || "").trim() || "Otro");
+  const paisFinal = esOtro(pais) ? (String(formData.get("pais_otro") || "").trim() || "Otro") : String(pais || "").trim();
+  const medioFinal = esOtro(medio) ? (String(formData.get("medio_otro") || "").trim() || "Otro") : String(medio || "").trim();
+  const razonFinal = esOtro(razon) ? (String(formData.get("razon_otro") || "").trim() || "Otro") : String(razon || "").trim();
+  const ticketFinal = esOtro(ticket) ? (String(formData.get("ticket_otro") || "").trim() || "Otro") : String(ticket || "").trim();
 
   // ✅ Email del agente obligatorio
   const emailActual = String(formData.get("email") || "").trim();
@@ -186,19 +185,19 @@ document.addEventListener("submit", async (e) => {
     return;
   }
 
-  // ✅ Construir payload limpio (con 100% match a tus headers en Sheets)
-  // Headers en tu Sheet: Time, Pais, Medio, Razon de contacto, ¿Necesitó ticket?, Comentario cliente, Link ticket, Email, Notas, Sentimientos
+  // ✅ Construir payload con NOMBRES EXACTOS de columnas (headers) del Sheet
+  // Tus columnas actuales: Time, Pais, Medio, Razon de contacto, ¿Necesitó ticket?, Comentario cliente, Link ticket, Email, Notas, Sentimientos
   const payload = {
-    "Pais": String(formData.get("pais") || "").trim(),
-    "Medio": String(formData.get("medio") || "").trim(),
-    "Razon de contacto": String(formData.get("razon") || "").trim(),
-    "¿Necesitó ticket?": String(formData.get("ticket") || "").trim(),
+    // Time lo rellena el backend si detecta header "Time"
+    "Pais": paisFinal,
+    "Medio": medioFinal,
+    "Razon de contacto": razonFinal,
+    "¿Necesitó ticket?": ticketFinal,
     "Comentario cliente": String(formData.get("comentario_cliente") || "").trim(),
     "Link ticket": String(formData.get("link_ticket") || "").trim(),
-    "Email": String(formData.get("email") || "").trim(),
+    "Email": emailActual,
     "Notas": String(formData.get("notas") || "").trim(),
     "Sentimientos": String(formData.get("sentimiento") || "").trim(),
-    // Time NO se manda: el backend lo llena si ve el header "Time"
   };
 
   try {
