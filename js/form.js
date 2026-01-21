@@ -1,6 +1,5 @@
 // form.js (módulo cargado desde sidebar.js)
 // ✅ Guardar por API /api/responses (JSON)
-// ✅ Envía payload con llaves IGUALES a los headers de Google Sheets
 
 function getUsuarioCorreo() {
   try {
@@ -141,11 +140,19 @@ function prepararForm() {
   if (!form) return;
 
   setDefaultEmailAgente();
+
   document.querySelectorAll(".combo").forEach(initCombo);
   setupOtros();
 }
 
 prepararForm();
+
+// ✅ helper para leer combo por data-name
+function getComboValue(name) {
+  const combo = document.querySelector(`.combo[data-name="${name}"]`);
+  const val = combo?.querySelector(".combo-input")?.value || "";
+  return String(val).trim();
+}
 
 // ✅ SUBMIT
 document.addEventListener("submit", async (e) => {
@@ -156,48 +163,45 @@ document.addEventListener("submit", async (e) => {
 
   if (!validarSentimiento(form)) return;
 
-  // ✅ tomar valores de combos y guardarlos en hidden inputs
+  // Guardar combos a hidden inputs para que FormData los incluya
   document.querySelectorAll(".combo").forEach(combo => {
     const name = combo.getAttribute("data-name");
     const val = combo.querySelector(".combo-input")?.value || "";
     setHidden(form, name, val);
   });
 
-  const formData = new FormData(form);
+  const fd = new FormData(form);
 
-  // ✅ Si es "Otro", reemplazar por el texto escrito
-  const pais = formData.get("pais");
-  const medio = formData.get("medio");
-  const razon = formData.get("razon");
-  const ticket = formData.get("ticket");
+  // Resolver "Otro"
+  const pais = String(fd.get("pais") || "").trim();
+  const medio = String(fd.get("medio") || "").trim();
+  const razon = String(fd.get("razon") || "").trim();
+  const ticket = String(fd.get("ticket") || "").trim();
 
-  const paisFinal = esOtro(pais) ? (String(formData.get("pais_otro") || "").trim() || "Otro") : String(pais || "").trim();
-  const medioFinal = esOtro(medio) ? (String(formData.get("medio_otro") || "").trim() || "Otro") : String(medio || "").trim();
-  const razonFinal = esOtro(razon) ? (String(formData.get("razon_otro") || "").trim() || "Otro") : String(razon || "").trim();
-  const ticketFinal = esOtro(ticket) ? (String(formData.get("ticket_otro") || "").trim() || "Otro") : String(ticket || "").trim();
+  const paisFinal = esOtro(pais) ? (String(fd.get("pais_otro") || "").trim() || "Otro") : pais;
+  const medioFinal = esOtro(medio) ? (String(fd.get("medio_otro") || "").trim() || "Otro") : medio;
+  const razonFinal = esOtro(razon) ? (String(fd.get("razon_otro") || "").trim() || "Otro") : razon;
+  const ticketFinal = esOtro(ticket) ? (String(fd.get("ticket_otro") || "").trim() || "Otro") : ticket;
 
-  // ✅ Email del agente obligatorio
-  const emailActual = String(formData.get("email") || "").trim();
+  const emailActual = String(fd.get("email") || "").trim();
   if (!emailActual) {
     alert("⚠️ El correo del agente (Email) es obligatorio.");
-    const emailInput = document.getElementById("emailAgente") || form.querySelector('input[name="email"]');
-    if (emailInput) emailInput.focus();
+    (document.getElementById("emailAgente") || form.querySelector('input[name="email"]'))?.focus();
     return;
   }
 
-  // ✅ Construir payload con NOMBRES EXACTOS de columnas (headers) del Sheet
-  // Tus columnas actuales: Time, Pais, Medio, Razon de contacto, ¿Necesitó ticket?, Comentario cliente, Link ticket, Email, Notas, Sentimientos
+  // ✅ Payload EXACTO a tus headers en Sheets
   const payload = {
-    // Time lo rellena el backend si detecta header "Time"
     "Pais": paisFinal,
     "Medio": medioFinal,
     "Razon de contacto": razonFinal,
     "¿Necesitó ticket?": ticketFinal,
-    "Comentario cliente": String(formData.get("comentario_cliente") || "").trim(),
-    "Link ticket": String(formData.get("link_ticket") || "").trim(),
+    "Comentario cliente": String(fd.get("comentario_cliente") || "").trim(),
+    "Link ticket": String(fd.get("link_ticket") || "").trim(),
     "Email": emailActual,
-    "Notas": String(formData.get("notas") || "").trim(),
-    "Sentimientos": String(formData.get("sentimiento") || "").trim(),
+    "Notas": String(fd.get("notas") || "").trim(),
+    "Sentimientos": String(fd.get("sentimiento") || "").trim(),
+    // "Time" lo pone el backend SIEMPRE, no hace falta mandarlo
   };
 
   try {
