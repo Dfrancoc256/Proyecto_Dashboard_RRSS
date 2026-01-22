@@ -1,4 +1,4 @@
-/*js/chats.js */
+/*js/charts.js */
 let datosGlobales = [];
 let charts = [];
 
@@ -66,17 +66,13 @@ async function cargarDatos() {
 ============================= */
 function parseFechaSheets(valor) {
   if (!valor) return null;
-
-  // Si ya es Date
   if (valor instanceof Date) return valor;
 
   const s = String(valor).trim();
 
-  // Intento ISO / formatos que el navegador soporte
   const isoTry = new Date(s);
   if (!isNaN(isoTry)) return isoTry;
 
-  // dd/mm/yyyy o dd/mm/yyyy hh:mm:ss (asumimos dd/mm por tu región)
   const parts = s.split(" ");
   const fecha = parts[0];
   const hora = parts[1] || "00:00:00";
@@ -118,17 +114,13 @@ function aplicarFiltros() {
   const filtrados = datosGlobales.filter(item => {
     let valido = true;
 
-    // ✅ Fecha del item (viene de Sheets)
     const dItem = parseFechaSheets(item.time);
 
-    // Si el usuario está filtrando por fecha y no se pudo leer la fecha del registro -> descartar
     if ((dDesde || dHasta) && !dItem) valido = false;
 
-    // ✅ Comparación correcta por rango
     if (dDesde && dItem && dItem < dDesde) valido = false;
     if (dHasta && dItem && dItem > dHasta) valido = false;
 
-    // Otros filtros
     if (pais !== "todos" && normalizarTexto(item.pais) !== pais) valido = false;
     if (medio !== "todos" && normalizarTexto(item.medio) !== medio) valido = false;
     if (sentimiento !== "todos" && normalizarTexto(obtenerSentimiento(item)) !== sentimiento) valido = false;
@@ -218,11 +210,20 @@ function contarPorCampo(data, campo) {
   return conteo;
 }
 
+// ✅ FIX REAL: normalizar sentimiento para que no se duplique por mayúsculas/minúsculas
 function contarPorSentimiento(data) {
   const conteo = {};
   data.forEach(row => {
-    const valor = String(obtenerSentimiento(row) ?? "Sin dato").trim() || "Sin dato";
-    conteo[valor] = (conteo[valor] || 0) + 1;
+    const raw = String(obtenerSentimiento(row) ?? "Sin dato").trim() || "Sin dato";
+    const s = raw.toLowerCase();
+
+    const etiqueta =
+      s === "positivo" ? "Positivo" :
+      s === "negativo" ? "Negativo" :
+      s === "neutral" ? "Neutral" :
+      "Sin dato";
+
+    conteo[etiqueta] = (conteo[etiqueta] || 0) + 1;
   });
   return conteo;
 }
@@ -252,7 +253,7 @@ function crearGraficoPie(id, dataset, colores) {
 }
 
 /* =============================
-   PIE SENTIMIENTO (CORREGIDO)
+   PIE SENTIMIENTO
 ============================= */
 function crearGraficoPieSentimiento(id, dataset, colors) {
   const ctx = document.getElementById(id);
