@@ -1,4 +1,4 @@
-/*js/charts.js */
+/* js/charts.js */
 let datosGlobales = [];
 let charts = [];
 
@@ -31,9 +31,10 @@ function ocultarEstado() {
 export async function initCharts() {
   await cargarDatos();
 
+  // ✅ evita listeners duplicados al volver a "Inicio"
   const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
   if (btnAplicarFiltros) {
-    btnAplicarFiltros.addEventListener("click", aplicarFiltros);
+    btnAplicarFiltros.onclick = aplicarFiltros;
   }
 }
 
@@ -49,6 +50,9 @@ async function cargarDatos() {
     if (res.status === "success") {
       const lista = res?.data?.data ?? res?.data ?? [];
       datosGlobales = Array.isArray(lista) ? lista : [];
+
+      // ✅ llena filtro usuario con los emails únicos
+      poblarFiltroUsuarios(datosGlobales);
 
       renderDashboard(datosGlobales);
       ocultarEstado();
@@ -99,14 +103,53 @@ function finDelDia(yyyy_mm_dd) {
 }
 
 /* =============================
+   ✅ FILTRO USUARIOS (Email)
+============================= */
+function poblarFiltroUsuarios(data) {
+  const sel = document.getElementById("filterUsuario");
+  if (!sel) return;
+
+  // mantener opción "Todos"
+  const actual = sel.value || "todos";
+  sel.innerHTML = `<option value="todos">Todos</option>`;
+
+  const emails = Array.from(
+    new Set(
+      data
+        .map(d => String(d.email || "").trim().toLowerCase())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  emails.forEach(e => {
+    const opt = document.createElement("option");
+    opt.value = e;
+    opt.textContent = e;
+    sel.appendChild(opt);
+  });
+
+  // intentar restaurar selección previa
+  if (emails.includes(actual)) sel.value = actual;
+  else sel.value = "todos";
+}
+
+/* =============================
    FILTROS
 ============================= */
 function aplicarFiltros() {
-  const desde = document.getElementById("filterDesde").value;
-  const hasta = document.getElementById("filterHasta").value;
-  const pais = normalizarTexto(document.getElementById("filterPais").value);
-  const medio = normalizarTexto(document.getElementById("filterMedio").value);
-  const sentimiento = normalizarTexto(document.getElementById("filterSentimiento").value);
+  const desdeEl = document.getElementById("filterDesde");
+  const hastaEl = document.getElementById("filterHasta");
+  const paisEl = document.getElementById("filterPais");
+  const medioEl = document.getElementById("filterMedio");
+  const sentimientoEl = document.getElementById("filterSentimiento");
+  const usuarioEl = document.getElementById("filterUsuario");
+
+  const desde = desdeEl ? desdeEl.value : "";
+  const hasta = hastaEl ? hastaEl.value : "";
+  const pais = paisEl ? normalizarTexto(paisEl.value) : "todos";
+  const medio = medioEl ? normalizarTexto(medioEl.value) : "todos";
+  const sentimiento = sentimientoEl ? normalizarTexto(sentimientoEl.value) : "todos";
+  const usuario = usuarioEl ? normalizarTexto(usuarioEl.value) : "todos";
 
   const dDesde = desde ? inicioDelDia(desde) : null;
   const dHasta = hasta ? finDelDia(hasta) : null;
@@ -124,6 +167,9 @@ function aplicarFiltros() {
     if (pais !== "todos" && normalizarTexto(item.pais) !== pais) valido = false;
     if (medio !== "todos" && normalizarTexto(item.medio) !== medio) valido = false;
     if (sentimiento !== "todos" && normalizarTexto(obtenerSentimiento(item)) !== sentimiento) valido = false;
+
+    // ✅ filtro por usuario (email)
+    if (usuario !== "todos" && normalizarTexto(item.email) !== usuario) valido = false;
 
     return valido;
   });
@@ -150,10 +196,15 @@ function renderMetrics(data) {
   const negativas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
   const neutrales = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;
 
-  document.getElementById("metricTotal").textContent = total;
-  document.getElementById("metricPositivas").textContent = total ? ((positivas / total) * 100).toFixed(1) + "%" : "0%";
-  document.getElementById("metricNegativas").textContent = total ? ((negativas / total) * 100).toFixed(1) + "%" : "0%";
-  document.getElementById("metricNeutrales").textContent = total ? ((neutrales / total) * 100).toFixed(1) + "%" : "0%";
+  const elTotal = document.getElementById("metricTotal");
+  const elPos = document.getElementById("metricPositivas");
+  const elNeg = document.getElementById("metricNegativas");
+  const elNeu = document.getElementById("metricNeutrales");
+
+  if (elTotal) elTotal.textContent = total;
+  if (elPos) elPos.textContent = total ? ((positivas / total) * 100).toFixed(1) + "%" : "0%";
+  if (elNeg) elNeg.textContent = total ? ((negativas / total) * 100).toFixed(1) + "%" : "0%";
+  if (elNeu) elNeu.textContent = total ? ((neutrales / total) * 100).toFixed(1) + "%" : "0%";
 }
 
 /* =============================
@@ -161,6 +212,7 @@ function renderMetrics(data) {
 ============================= */
 function renderResumen(data) {
   const resumen = document.getElementById("summary");
+  if (!resumen) return;
 
   if (!data.length) {
     resumen.textContent = "No hay datos disponibles en el rango seleccionado.";
@@ -168,6 +220,7 @@ function renderResumen(data) {
   }
 
   const paises = contarPorCampo(data, "pais");
+  // ✅ seguro: no depende de input del usuario
   resumen.innerHTML = `<b>${data.length}</b> gestiones registradas en <b>${Object.keys(paises).length}</b> países.`;
 }
 
@@ -175,7 +228,7 @@ function renderResumen(data) {
    GRÁFICOS
 ============================= */
 function renderCharts(data) {
-  charts.forEach(c => c.destroy());
+  charts.forEach(c => c?.destroy?.());
   charts = [];
 
   const pais = contarPorCampo(data, "pais");
@@ -191,11 +244,13 @@ function renderCharts(data) {
     gris: "#A3A3A3",
   };
 
-  charts.push(crearGraficoPie("chartPais", pais, [colors.azul, colors.celeste, colors.amarillo]));
-  charts.push(crearGraficoPie("chartMedio", medio, [colors.azul, colors.celeste, colors.verde, colors.amarillo]));
-  charts.push(crearGraficoPieSentimiento("chartSentimiento", sentimiento, colors));
-  charts.push(crearGraficoGauge(data, "chartMedidor"));
-  charts.push(crearGraficoBarras("chartCanales", medio, colors));
+  const c1 = crearGraficoPie("chartPais", pais, [colors.azul, colors.celeste, colors.amarillo]);
+  const c2 = crearGraficoPie("chartMedio", medio, [colors.azul, colors.celeste, colors.verde, colors.amarillo]);
+  const c3 = crearGraficoPieSentimiento("chartSentimiento", sentimiento, colors);
+  const c4 = crearGraficoGauge(data, "chartMedidor");
+  const c5 = crearGraficoBarras("chartCanales", medio, colors);
+
+  [c1, c2, c3, c4, c5].forEach(c => { if (c) charts.push(c); });
 }
 
 /* =============================
@@ -210,7 +265,6 @@ function contarPorCampo(data, campo) {
   return conteo;
 }
 
-// ✅ FIX REAL: normalizar sentimiento para que no se duplique por mayúsculas/minúsculas
 function contarPorSentimiento(data) {
   const conteo = {};
   data.forEach(row => {
@@ -233,7 +287,7 @@ function contarPorSentimiento(data) {
 ============================= */
 function crearGraficoPie(id, dataset, colores) {
   const ctx = document.getElementById(id);
-  if (!ctx) return;
+  if (!ctx) return null;
 
   return new Chart(ctx, {
     type: "pie",
@@ -257,7 +311,7 @@ function crearGraficoPie(id, dataset, colores) {
 ============================= */
 function crearGraficoPieSentimiento(id, dataset, colors) {
   const ctx = document.getElementById(id);
-  if (!ctx) return;
+  if (!ctx) return null;
 
   const labels = Object.keys(dataset);
   const values = Object.values(dataset);
@@ -294,7 +348,7 @@ function crearGraficoPieSentimiento(id, dataset, colors) {
 ============================= */
 function crearGraficoBarras(id, dataset, colors) {
   const ctx = document.getElementById(id);
-  if (!ctx) return;
+  if (!ctx) return null;
 
   return new Chart(ctx, {
     type: "bar",
@@ -317,7 +371,7 @@ function crearGraficoBarras(id, dataset, colors) {
 ============================= */
 function crearGraficoGauge(data, id) {
   const ctx = document.getElementById(id);
-  if (!ctx) return;
+  if (!ctx) return null;
 
   const positivas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "positivo").length;
   const neutrales = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;

@@ -1,4 +1,4 @@
-/* sidebar.js */
+/* js/sidebar.js */
 
 loadPage("home");
 setActiveButton("home");
@@ -6,8 +6,6 @@ setActiveButton("home");
 document.querySelectorAll(".sidebar button").forEach(btn => {
   btn.addEventListener("click", () => {
     const page = btn.dataset.page;
-
-    // ✅ Si no tiene data-page (ej: Cerrar sesión), no intenta cargar nada
     if (!page) return;
 
     setActiveButton(page);
@@ -21,17 +19,23 @@ function setActiveButton(page) {
   if (btn) btn.classList.add("active");
 }
 
-function loadPage(page) {
-  fetch(`pages/${page}.html`)
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("content").innerHTML = html;
+async function loadPage(page) {
+  try {
+    const res = await fetch(`pages/${page}.html`, { cache: "no-store" });
+    const html = await res.text();
+    document.getElementById("content").innerHTML = html;
 
-      if (page === "home") {
-        import("./charts.js").then(module => module.initCharts());
-      } else if (page === "form") {
-        import("./form.js"); // ✅ NO rompe dashboard
-      }
-    })
-    .catch(err => console.error("Error al cargar la página:", err));
+    if (page === "home") {
+      const m = await import("./charts.js");
+      await m.initCharts();
+    } else if (page === "form") {
+      const m = await import("./form.js");
+      m.initForm(); // ✅ reinit combos
+    } else if (page === "comentarios") {
+      const m = await import("./comentarios.js");
+      await m.initComentarios();
+    }
+  } catch (err) {
+    console.error("Error al cargar la página:", err);
+  }
 }

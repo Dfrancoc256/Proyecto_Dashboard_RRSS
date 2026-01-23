@@ -1,5 +1,6 @@
-// form.js (módulo cargado desde sidebar.js)
-// ✅ Guardar por API /api/responses (JSON)
+// js/form.js
+let submitBound = false;
+let comboCloserBound = false;
 
 function getUsuarioCorreo() {
   try {
@@ -15,16 +16,9 @@ function getUsuarioCorreo() {
   }
 }
 
-function normalizar(v) {
-  return String(v ?? "").trim().toLowerCase();
-}
+function normalizar(v) { return String(v ?? "").trim().toLowerCase(); }
+function esOtro(v) { const t = normalizar(v); return t === "otro" || t === "other"; }
 
-function esOtro(v) {
-  const t = normalizar(v);
-  return t === "otro" || t === "other";
-}
-
-// ✅ crea/actualiza input hidden para enviar name=...
 function setHidden(form, name, value) {
   let inp = form.querySelector(`input[type="hidden"][name="${name}"]`);
   if (!inp) {
@@ -36,12 +30,27 @@ function setHidden(form, name, value) {
   inp.value = value || "";
 }
 
-// ✅ Combobox: dropdown + filtro por escritura
+function bindComboCloserOnce() {
+  if (comboCloserBound) return;
+  comboCloserBound = true;
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".combo")) {
+      document.querySelectorAll(".combo .combo-list").forEach(list => {
+        list.style.display = "none";
+      });
+    }
+  });
+}
+
 function initCombo(combo) {
+  if (!combo || combo.dataset.inited === "1") return;
+  combo.dataset.inited = "1";
+
   const input = combo.querySelector(".combo-input");
   const btn = combo.querySelector(".combo-btn");
   const list = combo.querySelector(".combo-list");
-  const items = Array.from(list.querySelectorAll("li"));
+  const items = Array.from(list?.querySelectorAll("li") || []);
 
   if (!input || !btn || !list) return;
 
@@ -72,10 +81,6 @@ function initCombo(combo) {
       input.dispatchEvent(new Event("change"));
     });
   });
-
-  document.addEventListener("click", (e) => {
-    if (!combo.contains(e.target)) close();
-  });
 }
 
 function setDefaultEmailAgente() {
@@ -98,7 +103,6 @@ function validarSentimiento(form) {
   return true;
 }
 
-// ✅ Muestra/Oculta inputs "Otro" según lo elegido en combos
 function setupOtros() {
   const map = [
     { name: "pais", wrap: "paisOtroWrap", other: "paisOtro" },
@@ -114,7 +118,6 @@ function setupOtros() {
     const input = combo.querySelector(".combo-input");
     const wrap = document.getElementById(cfg.wrap);
     const otherInput = document.getElementById(cfg.other);
-
     if (!input || !wrap || !otherInput) return;
 
     const toggle = () => {
@@ -139,23 +142,13 @@ function prepararForm() {
   const form = document.getElementById("gestionForm");
   if (!form) return;
 
+  bindComboCloserOnce();
   setDefaultEmailAgente();
-
   document.querySelectorAll(".combo").forEach(initCombo);
   setupOtros();
 }
 
-prepararForm();
-
-// ✅ helper para leer combo por data-name
-function getComboValue(name) {
-  const combo = document.querySelector(`.combo[data-name="${name}"]`);
-  const val = combo?.querySelector(".combo-input")?.value || "";
-  return String(val).trim();
-}
-
-// ✅ SUBMIT
-document.addEventListener("submit", async (e) => {
+async function onSubmit(e) {
   if (!e.target || e.target.id !== "gestionForm") return;
 
   e.preventDefault();
@@ -163,7 +156,6 @@ document.addEventListener("submit", async (e) => {
 
   if (!validarSentimiento(form)) return;
 
-  // Guardar combos a hidden inputs para que FormData los incluya
   document.querySelectorAll(".combo").forEach(combo => {
     const name = combo.getAttribute("data-name");
     const val = combo.querySelector(".combo-input")?.value || "";
@@ -172,7 +164,6 @@ document.addEventListener("submit", async (e) => {
 
   const fd = new FormData(form);
 
-  // Resolver "Otro"
   const pais = String(fd.get("pais") || "").trim();
   const medio = String(fd.get("medio") || "").trim();
   const razon = String(fd.get("razon") || "").trim();
@@ -190,7 +181,6 @@ document.addEventListener("submit", async (e) => {
     return;
   }
 
-  // ✅ Payload EXACTO a tus headers en Sheets
   const payload = {
     "Pais": paisFinal,
     "Medio": medioFinal,
@@ -201,7 +191,6 @@ document.addEventListener("submit", async (e) => {
     "Email": emailActual,
     "Notas": String(fd.get("notas") || "").trim(),
     "Sentimientos": String(fd.get("sentimiento") || "").trim(),
-    // "Time" lo pone el backend SIEMPRE, no hace falta mandarlo
   };
 
   try {
@@ -224,4 +213,12 @@ document.addEventListener("submit", async (e) => {
   } catch (err) {
     alert("❌ Error al guardar: " + err.message);
   }
-});
+}
+
+export function initForm() {
+  prepararForm();
+  if (!submitBound) {
+    submitBound = true;
+    document.addEventListener("submit", onSubmit);
+  }
+}

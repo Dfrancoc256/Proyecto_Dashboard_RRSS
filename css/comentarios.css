@@ -1,0 +1,110 @@
+/* css/comentarios.css */
+.comments-view { padding: 18px; }
+.comments-view h3 { margin: 0 0 12px; }
+
+.c-filters{
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.c-filter label{ display:block; font-size: 12px; opacity: .85; margin-bottom: 6px; }
+.c-filter input, .c-filter select{
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+}
+
+.c-search{ grid-column: span 2; }
+
+.c-btn{
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.c-kpis{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.c-kpi{
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.c-kpi-title{ font-size: 12px; opacity: .85; }
+.c-kpi-value{ font-size: 18px; font-weight: 600; margin-top: 6px; }
+
+.c-charts{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.c-chart-card{
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.c-eje{
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  margin-bottom: 14px;
+}
+
+.c-eje-resumen{ display: grid; gap: 8px; }
+.c-eje-item{ padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.12); }
+
+.c-table-wrap{
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.c-table-controls{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.c-pagination button{
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.c-table{
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.c-table th, .c-table td{
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.c-table th{ text-align:left; opacity:.9; }

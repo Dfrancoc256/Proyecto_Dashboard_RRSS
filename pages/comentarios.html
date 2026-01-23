@@ -1,0 +1,121 @@
+<section class="comments-view">
+  <h3>Análisis País × Canal (positividad)</h3>
+
+  <!-- ======== FILTROS ======== -->
+  <div class="c-filters">
+    <div class="c-filter">
+      <label>Desde</label>
+      <input type="date" id="cDesde">
+    </div>
+
+    <div class="c-filter">
+      <label>Hasta</label>
+      <input type="date" id="cHasta">
+    </div>
+
+    <div class="c-filter">
+      <label>País</label>
+      <select id="cPais">
+        <option value="todos">Todos</option>
+      </select>
+    </div>
+
+    <div class="c-filter">
+      <label>Canal</label>
+      <select id="cMedio">
+        <option value="todos">Todos</option>
+      </select>
+    </div>
+
+    <div class="c-filter">
+      <label>Usuario</label>
+      <select id="cUsuario">
+        <option value="todos">Todos</option>
+      </select>
+    </div>
+
+    <div class="c-filter c-search">
+      <label>Buscar texto</label>
+      <input type="text" id="cBuscar" placeholder="Buscar en comentario/notas...">
+    </div>
+
+    <button id="cAplicar" type="button" class="c-btn">
+      <i class="fa-solid fa-filter"></i> Aplicar
+    </button>
+  </div>
+
+  <!-- ======== KPIs ======== -->
+  <div class="c-kpis">
+    <div class="c-kpi">
+      <div class="c-kpi-title">Total (filtrado)</div>
+      <div id="kTotal" class="c-kpi-value">0</div>
+    </div>
+    <div class="c-kpi">
+      <div class="c-kpi-title">% Positivos (filtrado)</div>
+      <div id="kPos" class="c-kpi-value">0%</div>
+    </div>
+    <div class="c-kpi">
+      <div class="c-kpi-title">Top País</div>
+      <div id="kTopPais" class="c-kpi-value">—</div>
+    </div>
+    <div class="c-kpi">
+      <div class="c-kpi-title">Top Canal</div>
+      <div id="kTopMedio" class="c-kpi-value">—</div>
+    </div>
+  </div>
+
+  <!-- ======== GRÁFICOS (Pie) ======== -->
+  <div class="c-charts">
+    <div class="c-chart-card">
+      <h4>% Positivos por País (Top)</h4>
+      <canvas id="piePaisPos"></canvas>
+    </div>
+
+    <div class="c-chart-card">
+      <h4>% Positivos por Canal (Top)</h4>
+      <canvas id="pieMedioPos"></canvas>
+    </div>
+  </div>
+
+  <!-- ======== EJE País × Canal ======== -->
+  <div class="c-eje">
+    <h4>Resumen País × Canal</h4>
+    <div id="ejeResumen" class="c-eje-resumen">Cargando...</div>
+  </div>
+
+  <!-- ======== TABLA (paginada) ======== -->
+  <div class="c-table-wrap">
+    <h4>Detalle de gestiones</h4>
+
+    <div class="c-table-controls">
+      <div>
+        Filas por página:
+        <select id="cLimit">
+          <option>50</option>
+          <option>100</option>
+          <option>200</option>
+        </select>
+      </div>
+
+      <div class="c-pagination">
+        <button id="cPrev" type="button">«</button>
+        <span id="cPageInfo">Página 1</span>
+        <button id="cNext" type="button">»</button>
+      </div>
+    </div>
+
+    <table class="c-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>País</th>
+          <th>Canal</th>
+          <th>Sentimiento</th>
+          <th>Comentario</th>
+        </tr>
+      </thead>
+      <tbody id="cTbody"></tbody>
+    </table>
+  </div>
+</section>
