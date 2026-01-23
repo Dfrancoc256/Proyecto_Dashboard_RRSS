@@ -1,110 +1,238 @@
 /* css/comentarios.css */
-.comments-view { padding: 18px; }
-.comments-view h3 { margin: 0 0 12px; }
+:root{
+  --ana-bg: #f6f8fb;
+  --ana-card: #ffffff;
+  --ana-text: #111827;
+  --ana-muted: #6b7280;
+  --ana-border: #e5e7eb;
 
-.c-filters{
+  /* paleta (la tuya) */
+  --ana-blue: #2F66F5;
+  --ana-sky: #54C0F2;
+  --ana-green: #10B981;
+  --ana-amber: #F9B233;
+  --ana-indigo: #4F46E5;
+
+  --ana-radius: 14px;
+}
+
+.ana-wrap{
+  padding: 26px;
+  background: var(--ana-bg);
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+  color: var(--ana-text);
+}
+
+.ana-header h2{
+  margin: 0 0 6px 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.ana-sub{
+  margin: 0 0 18px 0;
+  color: var(--ana-muted);
+  font-size: 13px;
+}
+
+/* filtros */
+.ana-filters{
   display: grid;
-  grid-template-columns: repeat(6, minmax(140px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 14px;
+  background: var(--ana-card);
+  border: 1px solid var(--ana-border);
+  border-radius: var(--ana-radius);
+  padding: 16px;
   align-items: end;
-  margin-bottom: 14px;
 }
 
-.c-filter label{ display:block; font-size: 12px; opacity: .85; margin-bottom: 6px; }
-.c-filter input, .c-filter select{
+.ana-filter label{
+  display: block;
+  font-size: 12px;
+  color: var(--ana-muted);
+  margin-bottom: 8px;
+}
+
+.ana-filter input,
+.ana-filter select{
   width: 100%;
-  padding: 9px 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--ana-border);
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.06);
-  color: inherit;
+  outline: none;
+  font-size: 14px;
+  background: #fff;
 }
 
-.c-search{ grid-column: span 2; }
+.ana-filter-wide{
+  grid-column: 1 / span 3;
+}
 
-.c-btn{
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: none;
+.ana-btn{
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--ana-border);
+  background: #111827;
+  color: #fff;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.c-kpis{
+.ana-btn i{ margin-right: 8px; }
+
+/* kpis */
+.ana-kpis{
+  margin-top: 14px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
-  gap: 10px;
-  margin-bottom: 14px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
 }
 
-.c-kpi{
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
+.ana-kpi{
+  background: var(--ana-card);
+  border: 1px solid var(--ana-border);
+  border-radius: var(--ana-radius);
+  padding: 14px 16px;
 }
 
-.c-kpi-title{ font-size: 12px; opacity: .85; }
-.c-kpi-value{ font-size: 18px; font-weight: 600; margin-top: 6px; }
+.ana-kpi-title{
+  display:block;
+  font-size: 12px;
+  color: var(--ana-muted);
+  margin-bottom: 6px;
+}
 
-.c-charts{
+.ana-kpi-value{
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* grids */
+.ana-grid-top{
+  margin-top: 14px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(280px, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 14px;
 }
 
-.c-chart-card{
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
+.ana-grid-bottom{
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 14px;
 }
 
-.c-eje{
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
-  margin-bottom: 14px;
+.ana-card{
+  background: var(--ana-card);
+  border: 1px solid var(--ana-border);
+  border-radius: var(--ana-radius);
+  overflow: hidden;
 }
 
-.c-eje-resumen{ display: grid; gap: 8px; }
-.c-eje-item{ padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.12); }
-
-.c-table-wrap{
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
+.ana-card-head{
+  padding: 12px 14px;
+  color: #fff;
+  font-weight: 700;
 }
 
-.c-table-controls{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
-  margin-bottom: 10px;
+.ana-card-head h3{
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
 }
 
-.c-pagination button{
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
+.ana-head-blue{ background: var(--ana-blue); }
+.ana-head-amber{ background: var(--ana-amber); }
+.ana-head-indigo{ background: var(--ana-indigo); }
+.ana-head-sky{ background: var(--ana-sky); }
+
+.ana-card-body{
+  padding: 12px 14px;
 }
 
-.c-table{
+.ana-table-wrap{
+  max-height: 420px;
+  overflow: auto;
+}
+
+.ana-table{
   width: 100%;
   border-collapse: collapse;
-  overflow: hidden;
-  border-radius: 12px;
+  font-size: 13px;
 }
 
-.c-table th, .c-table td{
-  padding: 10px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  font-size: 13px;
+.ana-table thead th{
+  position: sticky;
+  top: 0;
+  background: #f3f4f6;
+  z-index: 1;
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--ana-border);
+  color: #111827;
+}
+
+.ana-table tbody td{
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--ana-border);
   vertical-align: top;
 }
 
-.c-table th{ text-align:left; opacity:.9; }
+.ana-table tbody tr:nth-child(even){
+  background: #fafafa;
+}
+
+.ana-right{ text-align: right; }
+
+.ana-muted{
+  color: var(--ana-muted);
+  padding: 14px;
+}
+
+/* pager */
+.ana-pager{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  padding: 10px 14px 14px;
+  gap: 12px;
+}
+
+.ana-pager-left{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  color: var(--ana-muted);
+  font-size: 13px;
+}
+
+.ana-pager-left select{
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--ana-border);
+}
+
+.ana-pager-right{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  color: var(--ana-muted);
+}
+
+.ana-pager-btn{
+  border: 1px solid var(--ana-border);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor:pointer;
+}
+
+@media (max-width: 1100px){
+  .ana-filters{ grid-template-columns: 1fr 1fr; }
+  .ana-filter-wide{ grid-column: 1 / span 2; }
+  .ana-kpis{ grid-template-columns: 1fr 1fr; }
+  .ana-grid-top{ grid-template-columns: 1fr; }
+  .ana-grid-bottom{ grid-template-columns: 1fr; }
+}

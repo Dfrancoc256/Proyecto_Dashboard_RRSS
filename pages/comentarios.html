@@ -1,121 +1,177 @@
-<section class="comments-view">
-  <h3>Análisis País × Canal (positividad)</h3>
+<!-- pages/comentarios.html -->
+<section class="ana-wrap">
 
-  <!-- ======== FILTROS ======== -->
-  <div class="c-filters">
-    <div class="c-filter">
+  <header class="ana-header">
+    <h2>Comentarios</h2>
+    <p class="ana-sub">Resumen por canal, razones y detalle de comentarios</p>
+  </header>
+
+  <!-- FILTROS -->
+  <section class="ana-filters">
+    <div class="ana-filter">
       <label>Desde</label>
-      <input type="date" id="cDesde">
+      <input type="date" id="anaDesde" />
     </div>
 
-    <div class="c-filter">
+    <div class="ana-filter">
       <label>Hasta</label>
-      <input type="date" id="cHasta">
+      <input type="date" id="anaHasta" />
     </div>
 
-    <div class="c-filter">
+    <div class="ana-filter">
       <label>País</label>
-      <select id="cPais">
+      <select id="anaPais">
         <option value="todos">Todos</option>
       </select>
     </div>
 
-    <div class="c-filter">
+    <div class="ana-filter">
       <label>Canal</label>
-      <select id="cMedio">
+      <select id="anaCanal">
         <option value="todos">Todos</option>
       </select>
     </div>
 
-    <div class="c-filter">
+    <div class="ana-filter">
       <label>Usuario</label>
-      <select id="cUsuario">
+      <select id="anaUsuario">
         <option value="todos">Todos</option>
       </select>
     </div>
 
-    <div class="c-filter c-search">
-      <label>Buscar texto</label>
-      <input type="text" id="cBuscar" placeholder="Buscar en comentario/notas...">
+    <div class="ana-filter ana-filter-wide">
+      <label>Buscar en comentario / notas</label>
+      <input type="text" id="anaBuscar" placeholder="Escribe para filtrar texto..." />
     </div>
 
-    <button id="cAplicar" type="button" class="c-btn">
+    <button id="anaAplicar" class="ana-btn" type="button">
       <i class="fa-solid fa-filter"></i> Aplicar
     </button>
-  </div>
+  </section>
 
-  <!-- ======== KPIs ======== -->
-  <div class="c-kpis">
-    <div class="c-kpi">
-      <div class="c-kpi-title">Total (filtrado)</div>
-      <div id="kTotal" class="c-kpi-value">0</div>
-    </div>
-    <div class="c-kpi">
-      <div class="c-kpi-title">% Positivos (filtrado)</div>
-      <div id="kPos" class="c-kpi-value">0%</div>
-    </div>
-    <div class="c-kpi">
-      <div class="c-kpi-title">Top País</div>
-      <div id="kTopPais" class="c-kpi-value">—</div>
-    </div>
-    <div class="c-kpi">
-      <div class="c-kpi-title">Top Canal</div>
-      <div id="kTopMedio" class="c-kpi-value">—</div>
-    </div>
-  </div>
-
-  <!-- ======== GRÁFICOS (Pie) ======== -->
-  <div class="c-charts">
-    <div class="c-chart-card">
-      <h4>% Positivos por País (Top)</h4>
-      <canvas id="piePaisPos"></canvas>
+  <!-- KPIS -->
+  <section class="ana-kpis">
+    <div class="ana-kpi">
+      <span class="ana-kpi-title">Total (filtrado)</span>
+      <span id="anaTotal" class="ana-kpi-value">0</span>
     </div>
 
-    <div class="c-chart-card">
-      <h4>% Positivos por Canal (Top)</h4>
-      <canvas id="pieMedioPos"></canvas>
+    <div class="ana-kpi">
+      <span class="ana-kpi-title">% Positivos (filtrado)</span>
+      <span id="anaPctPos" class="ana-kpi-value">0%</span>
     </div>
-  </div>
 
-  <!-- ======== EJE País × Canal ======== -->
-  <div class="c-eje">
-    <h4>Resumen País × Canal</h4>
-    <div id="ejeResumen" class="c-eje-resumen">Cargando...</div>
-  </div>
+    <div class="ana-kpi">
+      <span class="ana-kpi-title">Top País</span>
+      <span id="anaTopPais" class="ana-kpi-value">—</span>
+    </div>
 
-  <!-- ======== TABLA (paginada) ======== -->
-  <div class="c-table-wrap">
-    <h4>Detalle de gestiones</h4>
+    <div class="ana-kpi">
+      <span class="ana-kpi-title">Top Canal</span>
+      <span id="anaTopCanal" class="ana-kpi-value">—</span>
+    </div>
+  </section>
 
-    <div class="c-table-controls">
-      <div>
-        Filas por página:
-        <select id="cLimit">
-          <option>50</option>
-          <option>100</option>
-          <option>200</option>
-        </select>
+  <!-- ARRIBA: PIE + TABLA -->
+  <section class="ana-grid-top">
+
+    <article class="ana-card">
+      <div class="ana-card-head ana-head-blue">
+        <h3>Cantidad de interacciones por canal</h3>
+      </div>
+      <div class="ana-card-body">
+        <canvas id="anaChartCanal"></canvas>
+      </div>
+    </article>
+
+    <article class="ana-card">
+      <div class="ana-card-head ana-head-amber">
+        <h3>Razones de contacto de clientes</h3>
+      </div>
+      <div class="ana-card-body ana-table-wrap">
+        <table class="ana-table" id="anaTablaRazones">
+          <thead>
+            <tr>
+              <th>Razón de contacto</th>
+              <th class="ana-right">Record Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="2" class="ana-muted">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- ABAJO: TABLA POR CANAL + DETALLE -->
+  <section class="ana-grid-bottom">
+
+    <article class="ana-card">
+      <div class="ana-card-head ana-head-indigo">
+        <h3>Razones de contacto por canal</h3>
+      </div>
+      <div class="ana-card-body ana-table-wrap">
+        <table class="ana-table" id="anaTablaRazonCanal">
+          <thead>
+            <tr>
+              <th>Canal</th>
+              <th>Razón</th>
+              <th class="ana-right">Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="3" class="ana-muted">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="ana-card">
+      <div class="ana-card-head ana-head-sky">
+        <h3>Comentarios / Notas (detalle)</h3>
       </div>
 
-      <div class="c-pagination">
-        <button id="cPrev" type="button">«</button>
-        <span id="cPageInfo">Página 1</span>
-        <button id="cNext" type="button">»</button>
+      <div class="ana-card-body ana-table-wrap">
+        <table class="ana-table" id="anaTablaDetalle">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>País</th>
+              <th>Canal</th>
+              <th>Razón</th>
+              <th>Comentario</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="7" class="ana-muted">Cargando...</td></tr>
+          </tbody>
+        </table>
       </div>
-    </div>
 
-    <table class="c-table">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Usuario</th>
-          <th>País</th>
-          <th>Canal</th>
-          <th>Sentimiento</th>
-          <th>Comentario</th>
-        </tr>
-      </thead>
-      <tbody id="cTbody"></tbody>
-    </table>
-  </div>
+      <div class="ana-pager">
+        <div class="ana-pager-left">
+          <label>Filas por página:</label>
+          <select id="anaPageSize">
+            <option>10</option>
+            <option selected>30</option>
+            <option>50</option>
+            <option>100</option>
+          </select>
+        </div>
+
+        <div class="ana-pager-right">
+          <button id="anaPrev" class="ana-pager-btn" type="button">«</button>
+          <span id="anaPageInfo">Página 1 de 1</span>
+          <button id="anaNext" class="ana-pager-btn" type="button">»</button>
+        </div>
+      </div>
+
+    </article>
+
+  </section>
+
 </section>
