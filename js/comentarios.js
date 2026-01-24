@@ -76,6 +76,148 @@ function porcentajePositivos(data) {
   return (pos / total) * 100;
 }
 
+/* =============================
+   ✅ helpers % + tooltip
+============================= */
+function toPercentWithCounts(datasetCounts) {
+  const labels = Object.keys(datasetCounts || {});
+  const counts = labels.map(k => Number(datasetCounts[k]) || 0);
+  const total = counts.reduce((a, b) => a + b, 0) || 1;
+  const percents = counts.map(v => +((v / total) * 100).toFixed(1));
+  return { labels, counts, percents, total };
+}
+
+function fmtPercent(p) {
+  const n = Number(p) || 0;
+  if (n === 0) return "0%";
+  if (n < 1) return "<1%";
+  return `${n}%`;
+}
+
+/* =============================
+   ✅ Plugin % con contorno blanco (por si charts.js no se carga aquí)
+============================= */
+const percentLabelsPlugin = {
+  id: "percentLabelsPlugin",
+  afterDatasetsDraw(chart, args, pluginOptions) {
+    const { ctx } = chart;
+    const opts = pluginOptions || {};
+
+    const fontSize = opts.fontSize || 12;
+    const fontFamily = opts.fontFamily || "Poppins, sans-serif";
+
+    const outsideThreshold =
+      typeof opts.outsideThreshold === "number" ? opts.outsideThreshold : 4;
+    const outsideOffset =
+      typeof opts.outsideOffset === "number" ? opts.outsideOffset : 20;
+
+    const minArcPx =
+      typeof opts.minArcPx === "number" ? opts.minArcPx : 26;
+
+    const strokeWidth =
+      typeof opts.strokeWidth === "number" ? opts.strokeWidth : 4;
+    const strokeColor = opts.strokeColor || "#ffffff";
+    const fillColor = opts.fillColor || "#111827";
+
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex);
+      if (!meta || meta.hidden) return;
+
+      const type = chart.config.type;
+      const isPie = type === "pie" || type === "doughnut";
+      const isBar = type === "bar";
+      if (!isPie && !isBar) return;
+
+      ctx.save();
+      ctx.font = `700 ${fontSize}px ${fontFamily}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      meta.data.forEach((element, index) => {
+        const val = Number(dataset.data?.[index]) || 0;
+        if (val <= 0) return;
+
+        const text = fmtPercent(val);
+
+        if (isPie) {
+          const props = element.getProps(
+            ["x", "y", "startAngle", "endAngle", "outerRadius", "innerRadius"],
+            true
+          );
+          const { x, y, startAngle, endAngle, outerRadius, innerRadius } = props;
+          const mid = (startAngle + endAngle) / 2;
+
+          const arcLen = Math.abs(endAngle - startAngle) * outerRadius;
+          const rInside = innerRadius + (outerRadius - innerRadius) * 0.55;
+
+          const useOutside = val < outsideThreshold || arcLen < minArcPx;
+
+          const r = useOutside ? outerRadius + outsideOffset : rInside;
+
+          let tx = x + Math.cos(mid) * r;
+          let ty = y + Math.sin(mid) * r;
+
+          if (useOutside) {
+            const lx1 = x + Math.cos(mid) * (outerRadius - 2);
+            const ly1 = y + Math.sin(mid) * (outerRadius - 2);
+            const lx2 = x + Math.cos(mid) * (outerRadius + outsideOffset - 8);
+            const ly2 = y + Math.sin(mid) * (outerRadius + outsideOffset - 8);
+
+            ctx.save();
+            ctx.strokeStyle = "rgba(17,24,39,0.35)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(lx1, ly1);
+            ctx.lineTo(lx2, ly2);
+            ctx.stroke();
+            ctx.restore();
+
+            const side = Math.cos(mid) >= 0 ? 1 : -1;
+            tx += side * 10;
+            ctx.textAlign = side === 1 ? "left" : "right";
+          } else {
+            ctx.textAlign = "center";
+          }
+
+          ctx.save();
+          ctx.lineWidth = strokeWidth;
+          ctx.strokeStyle = strokeColor;
+          ctx.strokeText(text, tx, ty);
+          ctx.fillStyle = fillColor;
+          ctx.fillText(text, tx, ty);
+          ctx.restore();
+        }
+
+        if (isBar) {
+          const pos = element.tooltipPosition?.();
+          if (!pos) return;
+
+          const tx = pos.x;
+          const ty = pos.y - 14;
+
+          ctx.save();
+          ctx.textAlign = "center";
+          ctx.lineWidth = strokeWidth;
+          ctx.strokeStyle = strokeColor;
+          ctx.strokeText(text, tx, ty);
+          ctx.fillStyle = fillColor;
+          ctx.fillText(text, tx, ty);
+          ctx.restore();
+        }
+      });
+
+      ctx.restore();
+    });
+  },
+};
+
+try {
+  const exists = Chart?.registry?.plugins?.get?.("percentLabelsPlugin");
+  if (!exists) Chart.register(percentLabelsPlugin);
+} catch {
+  try { Chart.register(percentLabelsPlugin); } catch {}
+}
+
 /* ========= tablas ========= */
 function renderTablaRazones(data) {
   const tb = document.querySelector("#anaTablaRazones tbody");
@@ -168,24 +310,45 @@ function renderChartCanal(data) {
   if (!ctx) return;
 
   const conteo = contarPorCampo(data, "medio");
-  const labels = Object.keys(conteo);
-  const values = Object.values(conteo);
+  const pack = toPercentWithCounts(conteo);
 
   if (chartCanal) chartCanal.destroy();
 
   chartCanal = new Chart(ctx, {
     type: "pie",
     data: {
-      labels,
+      labels: pack.labels,
       datasets: [{
-        data: values,
+        data: pack.percents,   // ✅ visible: %
+        _counts: pack.counts,  // tooltip: counts
         backgroundColor: ["#2F66F5", "#54C0F2", "#10B981", "#F9B233", "#A3A3A3", "#4F46E5", "#111827"],
         borderColor: "#fff",
         borderWidth: 2
       }]
     },
     options: {
-      plugins: { legend: { position: "right" } }
+      plugins: {
+        legend: { position: "right" },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const idx = context.dataIndex;
+              const n = context.dataset._counts?.[idx] ?? 0;
+              const p = context.raw;
+              return `${context.label}: ${n} (${fmtPercent(p)})`;
+            }
+          }
+        },
+        percentLabelsPlugin: {
+          outsideThreshold: 4,
+          outsideOffset: 22,
+          minArcPx: 26,
+          fontSize: 12,
+          strokeColor: "#ffffff",
+          strokeWidth: 4,
+          fillColor: "#111827",
+        }
+      }
     }
   });
 }
