@@ -176,7 +176,6 @@ const percentLabelsPlugin = {
   },
 };
 
-
 // Registrar plugin solo 1 vez
 try {
   const exists = Chart?.registry?.plugins?.get?.("percentLabelsPlugin");
@@ -186,12 +185,30 @@ try {
 }
 
 /* =============================
+   ✅ CONFIG: Leyenda abajo y ordenada
+============================= */
+function legendBottomConfig(labelsCount = 4) {
+  // 1 o 2 filas según cantidad
+  // (si hay muchas, Chart las pone en varias filas automáticamente)
+  return {
+    position: "bottom",
+    align: "center",
+    labels: {
+      boxWidth: 40,
+      boxHeight: 10,
+      padding: 12,
+      usePointStyle: false,
+      font: { size: 12, weight: "500" },
+    },
+  };
+}
+
+/* =============================
    INIT
 ============================= */
 export async function initCharts() {
   await cargarDatos();
 
-  // ✅ evita listeners duplicados al volver a "Inicio"
   const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
   if (btnAplicarFiltros) {
     btnAplicarFiltros.onclick = aplicarFiltros;
@@ -211,7 +228,6 @@ async function cargarDatos() {
       const lista = res?.data?.data ?? res?.data ?? [];
       datosGlobales = Array.isArray(lista) ? lista : [];
 
-      // ✅ llena filtro usuario con los emails únicos
       poblarFiltroUsuarios(datosGlobales);
 
       renderDashboard(datosGlobales);
@@ -444,6 +460,7 @@ function contarPorSentimiento(data) {
 
 /* =============================
    PIE GENÉRICO (% siempre)
+   ✅ Leyenda abajo para igualar tamaño
 ============================= */
 function crearGraficoPie(id, pack, colores) {
   const ctx = document.getElementById(id);
@@ -454,16 +471,19 @@ function crearGraficoPie(id, pack, colores) {
     data: {
       labels: pack.labels,
       datasets: [{
-        data: pack.percents,      // % visible
-        _counts: pack.counts,     // tooltip
+        data: pack.percents,
+        _counts: pack.counts,
         backgroundColor: colores,
         borderColor: "#fff",
         borderWidth: 2,
       }],
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false, // ✅ clave para que todos se vean iguales
+      layout: { padding: { top: 8, bottom: 8, left: 8, right: 8 } },
       plugins: {
-        legend: { position: "right" },
+        legend: legendBottomConfig(pack.labels.length), // ✅ abajo
         tooltip: {
           callbacks: {
             label: (context) => {
@@ -479,8 +499,6 @@ function crearGraficoPie(id, pack, colores) {
           outsideOffset: 20,
           minArcPx: 26,
           fontSize: 12,
-          strokeColor: "#ffffff",
-          strokeWidth: 4,
           fillColor: "#111827",
         },
       },
@@ -490,6 +508,7 @@ function crearGraficoPie(id, pack, colores) {
 
 /* =============================
    PIE SENTIMIENTO
+   ✅ Leyenda abajo para igualar tamaño
 ============================= */
 function crearGraficoPieSentimiento(id, pack, colors) {
   const ctx = document.getElementById(id);
@@ -518,8 +537,11 @@ function crearGraficoPieSentimiento(id, pack, colors) {
       }],
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false, // ✅ clave para que todos se vean iguales
+      layout: { padding: { top: 8, bottom: 8, left: 8, right: 8 } },
       plugins: {
-        legend: { position: "right" },
+        legend: legendBottomConfig(pack.labels.length), // ✅ abajo
         tooltip: {
           callbacks: {
             label: (context) => {
@@ -535,8 +557,6 @@ function crearGraficoPieSentimiento(id, pack, colors) {
           outsideOffset: 20,
           minArcPx: 26,
           fontSize: 12,
-          strokeColor: "#ffffff",
-          strokeWidth: 4,
           fillColor: "#111827",
         },
       },
@@ -563,6 +583,9 @@ function crearGraficoBarras(id, pack, colors) {
       }],
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
       scales: {
         y: {
           beginAtZero: true,
@@ -581,12 +604,7 @@ function crearGraficoBarras(id, pack, colors) {
             },
           },
         },
-        percentLabelsPlugin: {
-          fontSize: 12,
-          strokeColor: "#ffffff",
-          strokeWidth: 4,
-          fillColor: "#111827",
-        },
+        percentLabelsPlugin: { fontSize: 12, fillColor: "#111827" },
       },
     },
   });
@@ -623,7 +641,10 @@ function crearGraficoGauge(data, id) {
       }],
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
       cutout: "70%",
+      layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -641,8 +662,6 @@ function crearGraficoGauge(data, id) {
           outsideOffset: 18,
           minArcPx: 22,
           fontSize: 12,
-          strokeColor: "#ffffff",
-          strokeWidth: 4,
           fillColor: "#111827",
         },
       },
