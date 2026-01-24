@@ -26,23 +26,91 @@ function ocultarEstado() {
 }
 
 /* =============================
-   ✅ HELPERS % (global)
+   ✅ HELPERS
 ============================= */
 function sumDataset(dataset) {
   return Object.values(dataset || {}).reduce((a, b) => a + (Number(b) || 0), 0);
 }
 
-function datasetToPercent(dataset) {
-  const total = sumDataset(dataset);
-  const safeTotal = total || 1;
+function toPercentWithCounts(datasetCounts) {
+  const labels = Object.keys(datasetCounts || {});
+  const counts = labels.map((k) => Number(datasetCounts[k]) || 0);
+  const total = counts.reduce((a, b) => a + b, 0) || 1;
+  const percents = counts.map((v) => +((v / total) * 100).toFixed(1));
+  return { labels, counts, percents, total };
+}
 
-  const pct = {};
-  Object.keys(dataset || {}).forEach((k) => {
-    const v = Number(dataset[k]) || 0;
-    pct[k] = +((v / safeTotal) * 100).toFixed(1);
-  });
+/* =============================
+   ✅ PLUGIN: dibujar % visible siempre
+   - Pie/Doughnut: % dentro de cada slice
+   - Bar: % arriba de cada barra
+============================= */
+const percentLabelsPlugin = {
+  id: "percentLabelsPlugin",
+  afterDatasetsDraw(chart, args, pluginOptions) {
+    const { ctx } = chart;
+    const opts = pluginOptions || {};
+    const minPercent = typeof opts.minPercent === "number" ? opts.minPercent : 3; // no dibujar pedazos muy pequeños
+    const fontSize = opts.fontSize || 12;
+    const fontFamily = opts.fontFamily || "Poppins, sans-serif";
+    const textColor = opts.color || "#111";
 
-  return { pct, total };
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex);
+      if (!meta || meta.hidden) return;
+
+      const type = chart.config.type;
+      const isPie = type === "pie" || type === "doughnut";
+      const isBar = type === "bar";
+
+      // Solo pintamos labels en:
+      if (!isPie && !isBar) return;
+
+      ctx.save();
+      ctx.font = `600 ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      meta.data.forEach((element, index) => {
+        const val = Number(dataset.data?.[index]) || 0; // aquí viene el %
+        if (val < minPercent) return;
+
+        let pos = null;
+
+        // pie/doughnut -> usar centro del slice
+        if (isPie) {
+          if (typeof element.tooltipPosition === "function") {
+            pos = element.tooltipPosition();
+          }
+        }
+
+        // bar -> usar punto arriba del rectángulo
+        if (isBar) {
+          if (typeof element.tooltipPosition === "function") {
+            pos = element.tooltipPosition();
+            // subimos un poquito para que quede encima
+            pos = { x: pos.x, y: pos.y - 12 };
+          }
+        }
+
+        if (!pos) return;
+
+        const text = `${val}%`;
+        ctx.fillText(text, pos.x, pos.y);
+      });
+
+      ctx.restore();
+    });
+  },
+};
+
+// Registrar plugin solo 1 vez (por si vuelves a entrar a Inicio)
+try {
+  const exists = Chart?.registry?.plugins?.get?.("percentLabelsPlugin");
+  if (!exists) Chart.register(percentLabelsPlugin);
+} catch {
+  try { Chart.register(percentLabelsPlugin); } catch {}
 }
 
 /* =============================
@@ -129,7 +197,6 @@ function poblarFiltroUsuarios(data) {
   const sel = document.getElementById("filterUsuario");
   if (!sel) return;
 
-  // mantener opción "Todos"
   const actual = sel.value || "todos";
   sel.innerHTML = `<option value="todos">Todos</option>`;
 
@@ -148,7 +215,6 @@ function poblarFiltroUsuarios(data) {
     sel.appendChild(opt);
   });
 
-  // intentar restaurar selección previa
   if (emails.includes(actual)) sel.value = actual;
   else sel.value = "todos";
 }
@@ -188,7 +254,6 @@ function aplicarFiltros() {
     if (medio !== "todos" && normalizarTexto(item.medio) !== medio) valido = false;
     if (sentimiento !== "todos" && normalizarTexto(obtenerSentimiento(item)) !== sentimiento) valido = false;
 
-    // ✅ filtro por usuario (email)
     if (usuario !== "todos" && normalizarTexto(item.email) !== usuario) valido = false;
 
     return valido;
@@ -244,21 +309,19 @@ function renderResumen(data) {
 }
 
 /* =============================
-   GRÁFICOS (TODO EN %)
+   GRÁFICOS
 ============================= */
 function renderCharts(data) {
   charts.forEach((c) => c?.destroy?.());
   charts = [];
 
-  // Conteos base (no se pierden)
   const paisCount = contarPorCampo(data, "pais");
   const medioCount = contarPorCampo(data, "medio");
   const sentimientoCount = contarPorSentimiento(data);
 
-  // ✅ Convertidos a porcentaje para graficar
-  const paisPct = datasetToPercent(paisCount).pct;
-  const medioPct = datasetToPercent(medioCount).pct;
-  const sentimientoPct = datasetToPercent(sentimientoCount).pct;
+  const pais = toPercentWithCounts(paisCount);
+  const medio = toPercentWithCounts(medioCount);
+  const sentimiento = toPercentWithCounts(sentimientoCount);
 
   const colors = {
     azul: "#2F66F5",
@@ -269,15 +332,13 @@ function renderCharts(data) {
     gris: "#A3A3A3",
   };
 
-  const c1 = crearGraficoPie("chartPais", paisPct, [colors.azul, colors.celeste, colors.amarillo]);
-  const c2 = crearGraficoPie("chartMedio", medioPct, [colors.azul, colors.celeste, colors.verde, colors.amarillo]);
-  const c3 = crearGraficoPieSentimiento("chartSentimiento", sentimientoPct, colors);
-  const c4 = crearGraficoGauge(data, "chartMedidor"); // ya lo convertimos a % adentro
-  const c5 = crearGraficoBarras("chartCanales", medioPct, colors); // barras en %
+  const c1 = crearGraficoPie("chartPais", pais, [colors.azul, colors.celeste, colors.amarillo]);
+  const c2 = crearGraficoPie("chartMedio", medio, [colors.azul, colors.celeste, colors.verde, colors.amarillo]);
+  const c3 = crearGraficoPieSentimiento("chartSentimiento", sentimiento, colors);
+  const c4 = crearGraficoGauge(data, "chartMedidor");
+  const c5 = crearGraficoBarras("chartCanales", medio, colors);
 
-  [c1, c2, c3, c4, c5].forEach((c) => {
-    if (c) charts.push(c);
-  });
+  [c1, c2, c3, c4, c5].forEach((c) => c && charts.push(c));
 }
 
 /* =============================
@@ -310,18 +371,23 @@ function contarPorSentimiento(data) {
 }
 
 /* =============================
-   PIE GENÉRICO (%)
+   PIE GENÉRICO
+   - Muestra % dentro (plugin)
+   - Tooltip muestra cantidad (n) siempre
 ============================= */
-function crearGraficoPie(id, dataset, colores) {
+function crearGraficoPie(id, pack, colores) {
   const ctx = document.getElementById(id);
   if (!ctx) return null;
 
   return new Chart(ctx, {
     type: "pie",
     data: {
-      labels: Object.keys(dataset),
+      labels: pack.labels,
       datasets: [{
-        data: Object.values(dataset),
+        // Lo visible: %
+        data: pack.percents,
+        // Para tooltip: cantidades
+        _counts: pack.counts,
         backgroundColor: colores,
         borderColor: "#fff",
         borderWidth: 2,
@@ -332,23 +398,27 @@ function crearGraficoPie(id, dataset, colores) {
         legend: { position: "bottom" },
         tooltip: {
           callbacks: {
-            label: (context) => `${context.label}: ${context.raw}%`,
+            label: (context) => {
+              const idx = context.dataIndex;
+              const n = context.dataset._counts?.[idx] ?? 0;
+              const p = context.raw;
+              return `${context.label}: ${n} (${p}%)`;
+            },
           },
         },
+        // plugin propio
+        percentLabelsPlugin: { minPercent: 3, fontSize: 12 },
       },
     },
   });
 }
 
 /* =============================
-   PIE SENTIMIENTO (%)
+   PIE SENTIMIENTO
 ============================= */
-function crearGraficoPieSentimiento(id, dataset, colors) {
+function crearGraficoPieSentimiento(id, pack, colors) {
   const ctx = document.getElementById(id);
   if (!ctx) return null;
-
-  const labels = Object.keys(dataset);
-  const values = Object.values(dataset);
 
   const colorPorEtiqueta = {
     "Positivo": colors.verde,
@@ -358,14 +428,15 @@ function crearGraficoPieSentimiento(id, dataset, colors) {
     "Sin Dato": colors.rojo,
   };
 
-  const background = labels.map((l) => colorPorEtiqueta[l] || colors.gris);
+  const background = pack.labels.map((l) => colorPorEtiqueta[l] || colors.gris);
 
   return new Chart(ctx, {
     type: "pie",
     data: {
-      labels,
+      labels: pack.labels,
       datasets: [{
-        data: values,
+        data: pack.percents,
+        _counts: pack.counts,
         backgroundColor: background,
         borderColor: "#fff",
         borderWidth: 2,
@@ -376,28 +447,37 @@ function crearGraficoPieSentimiento(id, dataset, colors) {
         legend: { position: "bottom" },
         tooltip: {
           callbacks: {
-            label: (context) => `${context.label}: ${context.raw}%`,
+            label: (context) => {
+              const idx = context.dataIndex;
+              const n = context.dataset._counts?.[idx] ?? 0;
+              const p = context.raw;
+              return `${context.label}: ${n} (${p}%)`;
+            },
           },
         },
+        percentLabelsPlugin: { minPercent: 3, fontSize: 12 },
       },
     },
   });
 }
 
 /* =============================
-   BARRAS (%)
+   BARRAS
+   - Muestra % encima (plugin)
+   - Tooltip muestra cantidad (n) y %
 ============================= */
-function crearGraficoBarras(id, dataset, colors) {
+function crearGraficoBarras(id, pack, colors) {
   const ctx = document.getElementById(id);
   if (!ctx) return null;
 
   return new Chart(ctx, {
     type: "bar",
     data: {
-      labels: Object.keys(dataset),
+      labels: pack.labels,
       datasets: [{
         label: "% de gestiones",
-        data: Object.values(dataset),
+        data: pack.percents,
+        _counts: pack.counts,
         backgroundColor: colors.azul,
       }],
     },
@@ -414,9 +494,15 @@ function crearGraficoBarras(id, dataset, colors) {
       plugins: {
         tooltip: {
           callbacks: {
-            label: (ctx) => `${ctx.raw}%`,
+            label: (ctx) => {
+              const idx = ctx.dataIndex;
+              const n = ctx.dataset._counts?.[idx] ?? 0;
+              const p = ctx.raw;
+              return `${n} (${p}%)`;
+            },
           },
         },
+        percentLabelsPlugin: { minPercent: 3, fontSize: 12 },
       },
     },
   });
@@ -424,6 +510,8 @@ function crearGraficoBarras(id, dataset, colors) {
 
 /* =============================
    GAUGE (%)
+   - Tooltip muestra % y count
+   - Labels % dentro via plugin
 ============================= */
 function crearGraficoGauge(data, id) {
   const ctx = document.getElementById(id);
@@ -445,6 +533,7 @@ function crearGraficoGauge(data, id) {
       labels: ["Positivas", "Neutrales", "Negativas"],
       datasets: [{
         data: [pPos, pNeu, pNeg],
+        _counts: [positivas, neutrales, negativas],
         backgroundColor: ["#10B981", "#54C0F2", "#EF4444"],
         borderWidth: 0,
         circumference: 180,
@@ -457,9 +546,15 @@ function crearGraficoGauge(data, id) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => `${ctx.label}: ${ctx.raw}%`,
+            label: (ctx) => {
+              const idx = ctx.dataIndex;
+              const n = ctx.dataset._counts?.[idx] ?? 0;
+              const p = ctx.raw;
+              return `${ctx.label}: ${n} (${p}%)`;
+            },
           },
         },
+        percentLabelsPlugin: { minPercent: 5, fontSize: 12 },
       },
     },
   });
