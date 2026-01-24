@@ -309,16 +309,6 @@
   margin-bottom: 20px;
 }
 
-/* ================================
-   ✅ FIX: mismo tamaño en gráficos
-   (evita que uno se mire pequeño)
-================================ */
-.chart-card canvas {
-  width: 100% !important;
-  height: 320px !important; /* ajusta si deseas: 340 */
-  display: block;
-}
-
 /* ======== ANIMACIONES ======== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
