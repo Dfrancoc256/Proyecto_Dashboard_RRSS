@@ -28,48 +28,32 @@ function ocultarEstado() {
 /* =============================
    ✅ HELPERS
 ============================= */
+function sumDataset(dataset) {
+  return Object.values(dataset || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+}
+
 function toPercentWithCounts(datasetCounts) {
   const labels = Object.keys(datasetCounts || {});
   const counts = labels.map((k) => Number(datasetCounts[k]) || 0);
   const total = counts.reduce((a, b) => a + b, 0) || 1;
-
   const percents = counts.map((v) => +((v / total) * 100).toFixed(1));
   return { labels, counts, percents, total };
 }
 
-function fmtPercent(p) {
-  const n = Number(p) || 0;
-  if (n === 0) return "0%";
-  if (n < 1) return "<1%";
-  return `${n}%`;
-}
-
 /* =============================
-   ✅ PLUGIN: % SIEMPRE DENTRO
-   - Pie/Doughnut: % dentro (nunca afuera)
+   ✅ PLUGIN: dibujar % visible siempre
+   - Pie/Doughnut: % dentro de cada slice
    - Bar: % arriba de cada barra
-   - Auto font-size según cantidad de slices
 ============================= */
 const percentLabelsPlugin = {
   id: "percentLabelsPlugin",
   afterDatasetsDraw(chart, args, pluginOptions) {
     const { ctx } = chart;
     const opts = pluginOptions || {};
-
+    const minPercent = typeof opts.minPercent === "number" ? opts.minPercent : 3; // no dibujar pedazos muy pequeños
+    const fontSize = opts.fontSize || 12;
     const fontFamily = opts.fontFamily || "Poppins, sans-serif";
-    const fontWeight = opts.fontWeight || 700;
-
-    // Tamaño base (si no hay autoscale)
-    const baseFontSize = Number(opts.fontSize || 12);
-
-    // Auto-reduce cuando hay muchos slices
-    const autoScale = opts.autoScale !== false; // default true
-    const minFontSize = Number(opts.minFontSize || 9);
-
-    // Stroke (borde) + fill (texto)
-    const strokeWidth = Number(opts.strokeWidth || 3);
-    const strokeStyle = opts.strokeStyle || "rgba(0,0,0,0.55)";
-    const fillStyle = opts.fillStyle || "#ffffff";
+    const textColor = opts.color || "#111";
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       const meta = chart.getDatasetMeta(datasetIndex);
@@ -78,80 +62,42 @@ const percentLabelsPlugin = {
       const type = chart.config.type;
       const isPie = type === "pie" || type === "doughnut";
       const isBar = type === "bar";
+
+      // Solo pintamos labels en:
       if (!isPie && !isBar) return;
 
-      // Cantidad de labels del dataset actual (para auto-scale)
-      const labelCount = Array.isArray(chart.data?.labels) ? chart.data.labels.length : 0;
-
-      // Auto-scale simple (mientras más secciones, menor fuente)
-      let fontSize = baseFontSize;
-      if (autoScale && isPie) {
-        if (labelCount >= 18) fontSize = Math.max(minFontSize, baseFontSize - 4);
-        else if (labelCount >= 14) fontSize = Math.max(minFontSize, baseFontSize - 3);
-        else if (labelCount >= 10) fontSize = Math.max(minFontSize, baseFontSize - 2);
-        else if (labelCount >= 7) fontSize = Math.max(minFontSize, baseFontSize - 1);
-      }
-
-      if (autoScale && isBar) {
-        if (labelCount >= 18) fontSize = Math.max(minFontSize, baseFontSize - 2);
-        else if (labelCount >= 12) fontSize = Math.max(minFontSize, baseFontSize - 1);
-      }
-
       ctx.save();
-      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      ctx.font = `600 ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = textColor;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
       meta.data.forEach((element, index) => {
-        const val = Number(dataset.data?.[index]) || 0; // % visible
-        if (val <= 0) return;
+        const val = Number(dataset.data?.[index]) || 0; // aquí viene el %
+        if (val < minPercent) return;
 
-        const text = fmtPercent(val);
+        let pos = null;
 
-        // ======= PIE / DOUGHNUT (SIEMPRE DENTRO) =======
+        // pie/doughnut -> usar centro del slice
         if (isPie) {
-          const props = element.getProps(
-            ["x", "y", "startAngle", "endAngle", "outerRadius", "innerRadius"],
-            true
-          );
-
-          const { x, y, startAngle, endAngle, outerRadius, innerRadius } = props;
-          const mid = (startAngle + endAngle) / 2;
-
-          // “dentro” en un punto intermedio del arco
-          // Si es doughnut y tiene cutout grande, usamos más hacia afuera para que se vea
-          const span = outerRadius - innerRadius;
-          const factor = (innerRadius > 0) ? 0.62 : 0.55;
-          const rInside = innerRadius + span * factor;
-
-          const tx = x + Math.cos(mid) * rInside;
-          const ty = y + Math.sin(mid) * rInside;
-
-          ctx.save();
-          ctx.lineWidth = strokeWidth;
-          ctx.strokeStyle = strokeStyle;
-          ctx.strokeText(text, tx, ty);
-          ctx.fillStyle = fillStyle;
-          ctx.fillText(text, tx, ty);
-          ctx.restore();
+          if (typeof element.tooltipPosition === "function") {
+            pos = element.tooltipPosition();
+          }
         }
 
-        // ======= BARRAS (% encima) =======
+        // bar -> usar punto arriba del rectángulo
         if (isBar) {
-          const pos = element.tooltipPosition?.();
-          if (!pos) return;
-
-          const tx = pos.x;
-          const ty = pos.y - 12;
-
-          ctx.save();
-          ctx.lineWidth = strokeWidth;
-          ctx.strokeStyle = strokeStyle;
-          ctx.strokeText(text, tx, ty);
-          ctx.fillStyle = fillStyle;
-          ctx.fillText(text, tx, ty);
-          ctx.restore();
+          if (typeof element.tooltipPosition === "function") {
+            pos = element.tooltipPosition();
+            // subimos un poquito para que quede encima
+            pos = { x: pos.x, y: pos.y - 12 };
+          }
         }
+
+        if (!pos) return;
+
+        const text = `${val}%`;
+        ctx.fillText(text, pos.x, pos.y);
       });
 
       ctx.restore();
@@ -159,7 +105,7 @@ const percentLabelsPlugin = {
   },
 };
 
-// Registrar plugin solo 1 vez
+// Registrar plugin solo 1 vez (por si vuelves a entrar a Inicio)
 try {
   const exists = Chart?.registry?.plugins?.get?.("percentLabelsPlugin");
   if (!exists) Chart.register(percentLabelsPlugin);
@@ -386,8 +332,8 @@ function renderCharts(data) {
     gris: "#A3A3A3",
   };
 
-  const c1 = crearGraficoPie("chartPais", pais, [colors.azul, colors.celeste, colors.amarillo, colors.gris]);
-  const c2 = crearGraficoPie("chartMedio", medio, [colors.azul, colors.celeste, colors.verde, colors.amarillo, colors.gris]);
+  const c1 = crearGraficoPie("chartPais", pais, [colors.azul, colors.celeste, colors.amarillo]);
+  const c2 = crearGraficoPie("chartMedio", medio, [colors.azul, colors.celeste, colors.verde, colors.amarillo]);
   const c3 = crearGraficoPieSentimiento("chartSentimiento", sentimiento, colors);
   const c4 = crearGraficoGauge(data, "chartMedidor");
   const c5 = crearGraficoBarras("chartCanales", medio, colors);
@@ -425,7 +371,9 @@ function contarPorSentimiento(data) {
 }
 
 /* =============================
-   PIE GENÉRICO (% dentro SIEMPRE)
+   PIE GENÉRICO
+   - Muestra % dentro (plugin)
+   - Tooltip muestra cantidad (n) siempre
 ============================= */
 function crearGraficoPie(id, pack, colores) {
   const ctx = document.getElementById(id);
@@ -436,8 +384,10 @@ function crearGraficoPie(id, pack, colores) {
     data: {
       labels: pack.labels,
       datasets: [{
-        data: pack.percents,      // % visible
-        _counts: pack.counts,     // tooltip
+        // Lo visible: %
+        data: pack.percents,
+        // Para tooltip: cantidades
+        _counts: pack.counts,
         backgroundColor: colores,
         borderColor: "#fff",
         borderWidth: 2,
@@ -445,28 +395,19 @@ function crearGraficoPie(id, pack, colores) {
     },
     options: {
       plugins: {
-        legend: { position: "right" },
+        legend: { position: "bottom" },
         tooltip: {
           callbacks: {
             label: (context) => {
               const idx = context.dataIndex;
               const n = context.dataset._counts?.[idx] ?? 0;
               const p = context.raw;
-              return `${context.label}: ${n} (${fmtPercent(p)})`;
+              return `${context.label}: ${n} (${p}%)`;
             },
           },
         },
-        percentLabelsPlugin: {
-          // unificado
-          fontSize: 12,
-          minFontSize: 9,
-          autoScale: true,
-          fontFamily: "Poppins, sans-serif",
-          fontWeight: 700,
-          strokeWidth: 3,
-          strokeStyle: "rgba(0,0,0,0.55)",
-          fillStyle: "#ffffff",
-        },
+        // plugin propio
+        percentLabelsPlugin: { minPercent: 3, fontSize: 12 },
       },
     },
   });
@@ -503,34 +444,27 @@ function crearGraficoPieSentimiento(id, pack, colors) {
     },
     options: {
       plugins: {
-        legend: { position: "right" },
+        legend: { position: "bottom" },
         tooltip: {
           callbacks: {
             label: (context) => {
               const idx = context.dataIndex;
               const n = context.dataset._counts?.[idx] ?? 0;
               const p = context.raw;
-              return `${context.label}: ${n} (${fmtPercent(p)})`;
+              return `${context.label}: ${n} (${p}%)`;
             },
           },
         },
-        percentLabelsPlugin: {
-          fontSize: 12,
-          minFontSize: 9,
-          autoScale: true,
-          fontFamily: "Poppins, sans-serif",
-          fontWeight: 700,
-          strokeWidth: 3,
-          strokeStyle: "rgba(0,0,0,0.55)",
-          fillStyle: "#ffffff",
-        },
+        percentLabelsPlugin: { minPercent: 3, fontSize: 12 },
       },
     },
   });
 }
 
 /* =============================
-   BARRAS (% encima)
+   BARRAS
+   - Muestra % encima (plugin)
+   - Tooltip muestra cantidad (n) y %
 ============================= */
 function crearGraficoBarras(id, pack, colors) {
   const ctx = document.getElementById(id);
@@ -552,7 +486,9 @@ function crearGraficoBarras(id, pack, colors) {
         y: {
           beginAtZero: true,
           max: 100,
-          ticks: { callback: (value) => value + "%" },
+          ticks: {
+            callback: (value) => value + "%",
+          },
         },
       },
       plugins: {
@@ -562,20 +498,11 @@ function crearGraficoBarras(id, pack, colors) {
               const idx = ctx.dataIndex;
               const n = ctx.dataset._counts?.[idx] ?? 0;
               const p = ctx.raw;
-              return `${n} (${fmtPercent(p)})`;
+              return `${n} (${p}%)`;
             },
           },
         },
-        percentLabelsPlugin: {
-          fontSize: 12,
-          minFontSize: 9,
-          autoScale: true,
-          fontFamily: "Poppins, sans-serif",
-          fontWeight: 700,
-          strokeWidth: 3,
-          strokeStyle: "rgba(0,0,0,0.55)",
-          fillStyle: "#ffffff",
-        },
+        percentLabelsPlugin: { minPercent: 3, fontSize: 12 },
       },
     },
   });
@@ -583,6 +510,8 @@ function crearGraficoBarras(id, pack, colors) {
 
 /* =============================
    GAUGE (%)
+   - Tooltip muestra % y count
+   - Labels % dentro via plugin
 ============================= */
 function crearGraficoGauge(data, id) {
   const ctx = document.getElementById(id);
@@ -621,21 +550,11 @@ function crearGraficoGauge(data, id) {
               const idx = ctx.dataIndex;
               const n = ctx.dataset._counts?.[idx] ?? 0;
               const p = ctx.raw;
-              return `${ctx.label}: ${n} (${fmtPercent(p)})`;
+              return `${ctx.label}: ${n} (${p}%)`;
             },
           },
         },
-        percentLabelsPlugin: {
-          // gauge suele necesitar un toque más pequeño si hay poco espacio
-          fontSize: 11,
-          minFontSize: 9,
-          autoScale: true,
-          fontFamily: "Poppins, sans-serif",
-          fontWeight: 700,
-          strokeWidth: 3,
-          strokeStyle: "rgba(0,0,0,0.55)",
-          fillStyle: "#ffffff",
-        },
+        percentLabelsPlugin: { minPercent: 5, fontSize: 12 },
       },
     },
   });
