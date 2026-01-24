@@ -26,6 +26,26 @@ function ocultarEstado() {
 }
 
 /* =============================
+   ✅ HELPERS % (global)
+============================= */
+function sumDataset(dataset) {
+  return Object.values(dataset || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+}
+
+function datasetToPercent(dataset) {
+  const total = sumDataset(dataset);
+  const safeTotal = total || 1;
+
+  const pct = {};
+  Object.keys(dataset || {}).forEach((k) => {
+    const v = Number(dataset[k]) || 0;
+    pct[k] = +((v / safeTotal) * 100).toFixed(1);
+  });
+
+  return { pct, total };
+}
+
+/* =============================
    INIT
 ============================= */
 export async function initCharts() {
@@ -81,14 +101,14 @@ function parseFechaSheets(valor) {
   const fecha = parts[0];
   const hora = parts[1] || "00:00:00";
 
-  const [a, b, c] = fecha.split("/").map(n => parseInt(n, 10));
+  const [a, b, c] = fecha.split("/").map((n) => parseInt(n, 10));
   if (!a || !b || !c) return null;
 
   const dd = a;
   const mm = b - 1;
   const yyyy = c;
 
-  const [hh, mi, ss] = hora.split(":").map(n => parseInt(n, 10) || 0);
+  const [hh, mi, ss] = hora.split(":").map((n) => parseInt(n, 10) || 0);
 
   const d = new Date(yyyy, mm, dd, hh, mi, ss);
   return isNaN(d) ? null : d;
@@ -116,12 +136,12 @@ function poblarFiltroUsuarios(data) {
   const emails = Array.from(
     new Set(
       data
-        .map(d => String(d.email || "").trim().toLowerCase())
+        .map((d) => String(d.email || "").trim().toLowerCase())
         .filter(Boolean)
     )
   ).sort((a, b) => a.localeCompare(b));
 
-  emails.forEach(e => {
+  emails.forEach((e) => {
     const opt = document.createElement("option");
     opt.value = e;
     opt.textContent = e;
@@ -154,7 +174,7 @@ function aplicarFiltros() {
   const dDesde = desde ? inicioDelDia(desde) : null;
   const dHasta = hasta ? finDelDia(hasta) : null;
 
-  const filtrados = datosGlobales.filter(item => {
+  const filtrados = datosGlobales.filter((item) => {
     let valido = true;
 
     const dItem = parseFechaSheets(item.time);
@@ -192,9 +212,9 @@ function renderDashboard(data) {
 function renderMetrics(data) {
   const total = data.length;
 
-  const positivas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "positivo").length;
-  const negativas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
-  const neutrales = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;
+  const positivas = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "positivo").length;
+  const negativas = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
+  const neutrales = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;
 
   const elTotal = document.getElementById("metricTotal");
   const elPos = document.getElementById("metricPositivas");
@@ -220,20 +240,25 @@ function renderResumen(data) {
   }
 
   const paises = contarPorCampo(data, "pais");
-  // ✅ seguro: no depende de input del usuario
   resumen.innerHTML = `<b>${data.length}</b> gestiones registradas en <b>${Object.keys(paises).length}</b> países.`;
 }
 
 /* =============================
-   GRÁFICOS
+   GRÁFICOS (TODO EN %)
 ============================= */
 function renderCharts(data) {
-  charts.forEach(c => c?.destroy?.());
+  charts.forEach((c) => c?.destroy?.());
   charts = [];
 
-  const pais = contarPorCampo(data, "pais");
-  const medio = contarPorCampo(data, "medio");
-  const sentimiento = contarPorSentimiento(data);
+  // Conteos base (no se pierden)
+  const paisCount = contarPorCampo(data, "pais");
+  const medioCount = contarPorCampo(data, "medio");
+  const sentimientoCount = contarPorSentimiento(data);
+
+  // ✅ Convertidos a porcentaje para graficar
+  const paisPct = datasetToPercent(paisCount).pct;
+  const medioPct = datasetToPercent(medioCount).pct;
+  const sentimientoPct = datasetToPercent(sentimientoCount).pct;
 
   const colors = {
     azul: "#2F66F5",
@@ -244,13 +269,15 @@ function renderCharts(data) {
     gris: "#A3A3A3",
   };
 
-  const c1 = crearGraficoPie("chartPais", pais, [colors.azul, colors.celeste, colors.amarillo]);
-  const c2 = crearGraficoPie("chartMedio", medio, [colors.azul, colors.celeste, colors.verde, colors.amarillo]);
-  const c3 = crearGraficoPieSentimiento("chartSentimiento", sentimiento, colors);
-  const c4 = crearGraficoGauge(data, "chartMedidor");
-  const c5 = crearGraficoBarras("chartCanales", medio, colors);
+  const c1 = crearGraficoPie("chartPais", paisPct, [colors.azul, colors.celeste, colors.amarillo]);
+  const c2 = crearGraficoPie("chartMedio", medioPct, [colors.azul, colors.celeste, colors.verde, colors.amarillo]);
+  const c3 = crearGraficoPieSentimiento("chartSentimiento", sentimientoPct, colors);
+  const c4 = crearGraficoGauge(data, "chartMedidor"); // ya lo convertimos a % adentro
+  const c5 = crearGraficoBarras("chartCanales", medioPct, colors); // barras en %
 
-  [c1, c2, c3, c4, c5].forEach(c => { if (c) charts.push(c); });
+  [c1, c2, c3, c4, c5].forEach((c) => {
+    if (c) charts.push(c);
+  });
 }
 
 /* =============================
@@ -258,7 +285,7 @@ function renderCharts(data) {
 ============================= */
 function contarPorCampo(data, campo) {
   const conteo = {};
-  data.forEach(row => {
+  data.forEach((row) => {
     const valor = String(row[campo] ?? "Sin dato").trim() || "Sin dato";
     conteo[valor] = (conteo[valor] || 0) + 1;
   });
@@ -267,7 +294,7 @@ function contarPorCampo(data, campo) {
 
 function contarPorSentimiento(data) {
   const conteo = {};
-  data.forEach(row => {
+  data.forEach((row) => {
     const raw = String(obtenerSentimiento(row) ?? "Sin dato").trim() || "Sin dato";
     const s = raw.toLowerCase();
 
@@ -283,7 +310,7 @@ function contarPorSentimiento(data) {
 }
 
 /* =============================
-   PIE GENÉRICO
+   PIE GENÉRICO (%)
 ============================= */
 function crearGraficoPie(id, dataset, colores) {
   const ctx = document.getElementById(id);
@@ -301,13 +328,20 @@ function crearGraficoPie(id, dataset, colores) {
       }],
     },
     options: {
-      plugins: { legend: { position: "bottom" } },
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.label}: ${context.raw}%`,
+          },
+        },
+      },
     },
   });
 }
 
 /* =============================
-   PIE SENTIMIENTO
+   PIE SENTIMIENTO (%)
 ============================= */
 function crearGraficoPieSentimiento(id, dataset, colors) {
   const ctx = document.getElementById(id);
@@ -324,7 +358,7 @@ function crearGraficoPieSentimiento(id, dataset, colors) {
     "Sin Dato": colors.rojo,
   };
 
-  const background = labels.map(l => colorPorEtiqueta[l] || colors.gris);
+  const background = labels.map((l) => colorPorEtiqueta[l] || colors.gris);
 
   return new Chart(ctx, {
     type: "pie",
@@ -338,13 +372,20 @@ function crearGraficoPieSentimiento(id, dataset, colors) {
       }],
     },
     options: {
-      plugins: { legend: { position: "bottom" } },
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.label}: ${context.raw}%`,
+          },
+        },
+      },
     },
   });
 }
 
 /* =============================
-   BARRAS
+   BARRAS (%)
 ============================= */
 function crearGraficoBarras(id, dataset, colors) {
   const ctx = document.getElementById(id);
@@ -355,40 +396,71 @@ function crearGraficoBarras(id, dataset, colors) {
     data: {
       labels: Object.keys(dataset),
       datasets: [{
-        label: "Gestiones",
+        label: "% de gestiones",
         data: Object.values(dataset),
         backgroundColor: colors.azul,
       }],
     },
     options: {
-      scales: { y: { beginAtZero: true } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            callback: (value) => value + "%",
+          },
+        },
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.raw}%`,
+          },
+        },
+      },
     },
   });
 }
 
 /* =============================
-   GAUGE
+   GAUGE (%)
 ============================= */
 function crearGraficoGauge(data, id) {
   const ctx = document.getElementById(id);
   if (!ctx) return null;
 
-  const positivas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "positivo").length;
-  const neutrales = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;
-  const negativas = data.filter(d => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
+  const positivas = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "positivo").length;
+  const neutrales = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;
+  const negativas = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
+
+  const total = positivas + neutrales + negativas || 1;
+
+  const pPos = +((positivas / total) * 100).toFixed(1);
+  const pNeu = +((neutrales / total) * 100).toFixed(1);
+  const pNeg = +((negativas / total) * 100).toFixed(1);
 
   return new Chart(ctx, {
     type: "doughnut",
     data: {
       labels: ["Positivas", "Neutrales", "Negativas"],
       datasets: [{
-        data: [positivas, neutrales, negativas],
+        data: [pPos, pNeu, pNeg],
         backgroundColor: ["#10B981", "#54C0F2", "#EF4444"],
         borderWidth: 0,
         circumference: 180,
         rotation: 270,
       }],
     },
-    options: { cutout: "70%", plugins: { legend: { display: false } } },
+    options: {
+      cutout: "70%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${ctx.raw}%`,
+          },
+        },
+      },
+    },
   });
 }
