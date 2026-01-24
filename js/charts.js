@@ -26,9 +26,8 @@ function ocultarEstado() {
 }
 
 /* =============================
-   ✅ PLUGIN: % dentro de PIE/DOUGHNUT + % arriba de BARRAS
-   - Evita “bucle infinito”: NO toca tamaños del canvas ni CSS
-   - Oculta % muy pequeños (configurable) para que no se vea mal
+   ✅ PLUGIN: % dentro de PIE/DOUGHNUT + % PRO en BARRAS
+   - No toca tamaño/canvas => no bucles raros
 ============================= */
 const PercentLabelsPlugin = {
   id: "percentLabels",
@@ -45,25 +44,27 @@ const PercentLabelsPlugin = {
     const dataset = chart.data.datasets?.[0];
     if (!dataset) return;
 
-    // Valores reales (counts) para calcular porcentaje
     const raw = Array.isArray(dataset._rawCounts) ? dataset._rawCounts : dataset.data;
     const values = (raw || []).map(v => Number(v) || 0);
     const total = values.reduce((a, b) => a + b, 0);
     if (!total) return;
 
-    // Config por defecto
-    const minPercent = Number.isFinite(opts.minPercent) ? opts.minPercent : 4; // no mostrar <4%
+    // Fuente dinámica (se adapta bonito a tamaños reales)
+    const base = Math.max(10, Math.min(13, Math.round((chart.width || 400) / 35)));
+    const fontPie = opts.fontPie || `700 ${base}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    const fontBar = opts.fontBar || `700 ${Math.max(10, base - 1)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+
+    const minPercent = Number.isFinite(opts.minPercent) ? opts.minPercent : 4;
     const decimals = Number.isFinite(opts.decimals) ? opts.decimals : 0;
-    const color = opts.color || "#111";
-    const outline = opts.outline !== false; // borde blanco para legibilidad
 
     ctx.save();
-    ctx.font = (opts.font || "700 12px system-ui, -apple-system, Segoe UI, Roboto, Arial");
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
     // ===== PIE / DOUGHNUT: % DENTRO =====
     if (type === "pie" || type === "doughnut") {
+      ctx.font = fontPie;
+
       meta0.data.forEach((element, i) => {
         const v = values[i] || 0;
         if (!v) return;
@@ -71,7 +72,6 @@ const PercentLabelsPlugin = {
         const pct = (v / total) * 100;
         if (pct < minPercent) return;
 
-        // Chart.js ArcElement expone tooltipPosition() => buen centro del segmento
         const pos = typeof element.tooltipPosition === "function"
           ? element.tooltipPosition()
           : (element.getCenterPoint ? element.getCenterPoint() : null);
@@ -80,14 +80,12 @@ const PercentLabelsPlugin = {
 
         const label = `${pct.toFixed(decimals)}%`;
 
-        // Texto con borde blanco (se lee sobre cualquier color)
-        if (outline) {
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = "rgba(255,255,255,0.95)";
-          ctx.strokeText(label, pos.x, pos.y);
-        }
+        // Borde suave para legibilidad en colores claros/oscuros
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.strokeText(label, pos.x, pos.y);
 
-        ctx.fillStyle = color;
+        ctx.fillStyle = opts.colorPie || "#111";
         ctx.fillText(label, pos.x, pos.y);
       });
 
@@ -95,8 +93,10 @@ const PercentLabelsPlugin = {
       return;
     }
 
-    // ===== BAR: % ARRIBA (y tooltip sigue mostrando cantidad) =====
+    // ===== BAR: % BONITO (dentro si hay espacio, sino arriba) =====
     if (type === "bar") {
+      ctx.font = fontBar;
+
       meta0.data.forEach((bar, i) => {
         const v = values[i] || 0;
         if (!v) return;
@@ -104,19 +104,28 @@ const PercentLabelsPlugin = {
         const pct = (v / total) * 100;
         if (pct < (opts.minPercentBar ?? 0)) return;
 
-        // Posición arriba de la barra
-        const x = bar.x;
-        const y = bar.y - 12; // un poco arriba
-
         const label = `${pct.toFixed(decimals)}%`;
 
-        if (outline) {
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = "rgba(255,255,255,0.95)";
-          ctx.strokeText(label, x, y);
+        const x = bar.x;
+
+        // Altura disponible del gráfico (para decidir dentro/afuera)
+        const yTop = Math.min(bar.y, bar.base);
+        const yBase = Math.max(bar.y, bar.base);
+        const barHeight = yBase - yTop;
+
+        // Si la barra es suficientemente alta -> dentro (arribita)
+        // Si no -> encima (pero sin salirse)
+        let y;
+        const inside = barHeight >= 28;
+        if (inside) {
+          y = yTop + 14; // dentro
+        } else {
+          y = yTop - 10; // encima
+          y = Math.max(y, 12); // no se sale arriba
         }
 
-        ctx.fillStyle = color;
+        // En barras: SIN borde grueso (se veía feo)
+        ctx.fillStyle = opts.colorBar || "#111";
         ctx.fillText(label, x, y);
       });
 
@@ -134,7 +143,6 @@ const PercentLabelsPlugin = {
 export async function initCharts() {
   await cargarDatos();
 
-  // ✅ evita listeners duplicados al volver a "Inicio"
   const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
   if (btnAplicarFiltros) {
     btnAplicarFiltros.onclick = aplicarFiltros;
@@ -154,7 +162,6 @@ async function cargarDatos() {
       const lista = res?.data?.data ?? res?.data ?? [];
       datosGlobales = Array.isArray(lista) ? lista : [];
 
-      // ✅ llena filtro usuario con los emails únicos
       poblarFiltroUsuarios(datosGlobales);
 
       renderDashboard(datosGlobales);
@@ -230,8 +237,7 @@ function poblarFiltroUsuarios(data) {
     sel.appendChild(opt);
   });
 
-  if (emails.includes(actual)) sel.value = actual;
-  else sel.value = "todos";
+  sel.value = emails.includes(actual) ? actual : "todos";
 }
 
 /* =============================
@@ -267,8 +273,6 @@ function aplicarFiltros() {
     if (pais !== "todos" && normalizarTexto(item.pais) !== pais) valido = false;
     if (medio !== "todos" && normalizarTexto(item.medio) !== medio) valido = false;
     if (sentimiento !== "todos" && normalizarTexto(obtenerSentimiento(item)) !== sentimiento) valido = false;
-
-    // ✅ filtro por usuario (email)
     if (usuario !== "todos" && normalizarTexto(item.email) !== usuario) valido = false;
 
     return valido;
@@ -421,8 +425,8 @@ function crearGraficoPie(id, conteoObj, colores) {
     data: {
       labels,
       datasets: [{
-        data: counts,             // ← se mantiene cantidad real
-        _rawCounts: counts,       // ← el plugin y tooltip usan esto
+        data: counts,
+        _rawCounts: counts,
         backgroundColor: colores,
         borderColor: "#fff",
         borderWidth: 2,
@@ -430,16 +434,14 @@ function crearGraficoPie(id, conteoObj, colores) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true, // ✅ NO rompe tus cards (sin bucles raros)
+      maintainAspectRatio: true,
       plugins: {
         legend: { position: "bottom" },
         tooltip: tooltipCantidadYPorcentaje(),
         percentLabels: {
-          // % dentro del gráfico
-          minPercent: 4,      // oculta % muy pequeños para evitar “montón”
+          minPercent: 4,
           decimals: 0,
-          color: "#111",
-          outline: true
+          colorPie: "#111",
         }
       },
     },
@@ -485,7 +487,7 @@ function crearGraficoPieSentimiento(id, conteoObj, colors) {
       plugins: {
         legend: { position: "bottom" },
         tooltip: tooltipCantidadYPorcentaje(),
-        percentLabels: { minPercent: 4, decimals: 0, color: "#111", outline: true }
+        percentLabels: { minPercent: 4, decimals: 0, colorPie: "#111" }
       },
     },
     plugins: [PercentLabelsPlugin],
@@ -493,9 +495,7 @@ function crearGraficoPieSentimiento(id, conteoObj, colors) {
 }
 
 /* =============================
-   BARRAS (mostrar % arriba)
-   - Barras muestran % de gestiones
-   - Tooltip muestra cantidad y %
+   BARRAS (% arriba/dentro, limpio)
 ============================= */
 function crearGraficoBarras(id, conteoObj, colors) {
   const canvas = document.getElementById(id);
@@ -503,7 +503,6 @@ function crearGraficoBarras(id, conteoObj, colors) {
 
   const { labels, counts } = datasetDesdeConteo(conteoObj);
   const total = counts.reduce((a, b) => a + b, 0) || 0;
-
   const percents = counts.map(v => total ? (v / total) * 100 : 0);
 
   return new Chart(canvas, {
@@ -512,11 +511,11 @@ function crearGraficoBarras(id, conteoObj, colors) {
       labels,
       datasets: [{
         label: "% de Gestiones",
-        data: percents,          // ← barras en %
-        _rawCounts: counts,      // ← tooltip y plugin usan cantidad real
+        data: percents,
+        _rawCounts: counts,
         backgroundColor: colors.azul,
-        borderRadius: 6,
-        maxBarThickness: 48,
+        borderRadius: 8,
+        maxBarThickness: 52,
       }],
     },
     options: {
@@ -526,9 +525,7 @@ function crearGraficoBarras(id, conteoObj, colors) {
         y: {
           beginAtZero: true,
           max: 100,
-          ticks: {
-            callback: (v) => `${v}%`
-          }
+          ticks: { callback: (v) => `${v}%` }
         }
       },
       plugins: {
@@ -547,10 +544,8 @@ function crearGraficoBarras(id, conteoObj, colors) {
           }
         },
         percentLabels: {
-          // % arriba de las barras
           decimals: 0,
-          color: "#111",
-          outline: true,
+          colorBar: "#111",
           minPercentBar: 0
         }
       }
@@ -593,11 +588,9 @@ function crearGraficoGauge(data, id) {
         legend: { display: false },
         tooltip: tooltipCantidadYPorcentaje(),
         percentLabels: {
-          // en gauge hay poco espacio: subimos umbral para que no se amontone
           minPercent: 8,
           decimals: 0,
-          color: "#111",
-          outline: true
+          colorPie: "#111"
         }
       },
     },
