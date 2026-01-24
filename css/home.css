@@ -309,6 +309,24 @@
   margin-bottom: 20px;
 }
 
+/* ===========================
+   ✅ FIX: CANVAS ESTABLE (HOME)
+   - Mantiene el pie/gauge legible
+   - Evita que se aplaste o se recorte con más data
+=========================== */
+.chart-card canvas{
+  width: 100% !important;
+  height: 320px !important;
+  display: block;
+}
+
+/* Ajuste en pantallas pequeñas */
+@media (max-width: 768px){
+  .chart-card canvas{
+    height: 260px !important;
+  }
+}
+
 /* ======== ANIMACIONES ======== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }

@@ -45,9 +45,10 @@ function fmtPercent(p) {
 }
 
 /* =============================
-   ✅ PLUGIN: % visible SIEMPRE
-   - Pie/Doughnut: % dentro, y si es pequeño -> afuera con línea
+   ✅ PLUGIN: % SIEMPRE DENTRO
+   - Pie/Doughnut: % dentro (nunca afuera)
    - Bar: % arriba de cada barra
+   - Auto font-size según cantidad de slices
 ============================= */
 const percentLabelsPlugin = {
   id: "percentLabelsPlugin",
@@ -55,12 +56,20 @@ const percentLabelsPlugin = {
     const { ctx } = chart;
     const opts = pluginOptions || {};
 
-    const fontSize = opts.fontSize || 12;
     const fontFamily = opts.fontFamily || "Poppins, sans-serif";
+    const fontWeight = opts.fontWeight || 700;
 
-    // Si un slice es muy pequeño, lo sacamos afuera
-    const outsideThreshold = typeof opts.outsideThreshold === "number" ? opts.outsideThreshold : 4; // %
-    const outsideOffset = typeof opts.outsideOffset === "number" ? opts.outsideOffset : 18;
+    // Tamaño base (si no hay autoscale)
+    const baseFontSize = Number(opts.fontSize || 12);
+
+    // Auto-reduce cuando hay muchos slices
+    const autoScale = opts.autoScale !== false; // default true
+    const minFontSize = Number(opts.minFontSize || 9);
+
+    // Stroke (borde) + fill (texto)
+    const strokeWidth = Number(opts.strokeWidth || 3);
+    const strokeStyle = opts.strokeStyle || "rgba(0,0,0,0.55)";
+    const fillStyle = opts.fillStyle || "#ffffff";
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       const meta = chart.getDatasetMeta(datasetIndex);
@@ -71,20 +80,36 @@ const percentLabelsPlugin = {
       const isBar = type === "bar";
       if (!isPie && !isBar) return;
 
+      // Cantidad de labels del dataset actual (para auto-scale)
+      const labelCount = Array.isArray(chart.data?.labels) ? chart.data.labels.length : 0;
+
+      // Auto-scale simple (mientras más secciones, menor fuente)
+      let fontSize = baseFontSize;
+      if (autoScale && isPie) {
+        if (labelCount >= 18) fontSize = Math.max(minFontSize, baseFontSize - 4);
+        else if (labelCount >= 14) fontSize = Math.max(minFontSize, baseFontSize - 3);
+        else if (labelCount >= 10) fontSize = Math.max(minFontSize, baseFontSize - 2);
+        else if (labelCount >= 7) fontSize = Math.max(minFontSize, baseFontSize - 1);
+      }
+
+      if (autoScale && isBar) {
+        if (labelCount >= 18) fontSize = Math.max(minFontSize, baseFontSize - 2);
+        else if (labelCount >= 12) fontSize = Math.max(minFontSize, baseFontSize - 1);
+      }
+
       ctx.save();
-      ctx.font = `700 ${fontSize}px ${fontFamily}`;
+      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
       meta.data.forEach((element, index) => {
         const val = Number(dataset.data?.[index]) || 0; // % visible
-        if (val <= 0) return; // no dibujar si es 0
+        if (val <= 0) return;
 
         const text = fmtPercent(val);
 
-        // ======= PIE / DOUGHNUT =======
+        // ======= PIE / DOUGHNUT (SIEMPRE DENTRO) =======
         if (isPie) {
-          // ArcElement props
           const props = element.getProps(
             ["x", "y", "startAngle", "endAngle", "outerRadius", "innerRadius"],
             true
@@ -93,44 +118,25 @@ const percentLabelsPlugin = {
           const { x, y, startAngle, endAngle, outerRadius, innerRadius } = props;
           const mid = (startAngle + endAngle) / 2;
 
-          const rInside = innerRadius + (outerRadius - innerRadius) * 0.55;
+          // “dentro” en un punto intermedio del arco
+          // Si es doughnut y tiene cutout grande, usamos más hacia afuera para que se vea
+          const span = outerRadius - innerRadius;
+          const factor = (innerRadius > 0) ? 0.62 : 0.55;
+          const rInside = innerRadius + span * factor;
 
-          // Si es pequeño -> afuera
-          const useOutside = val < outsideThreshold;
+          const tx = x + Math.cos(mid) * rInside;
+          const ty = y + Math.sin(mid) * rInside;
 
-          const r = useOutside ? outerRadius + outsideOffset : rInside;
-
-          const tx = x + Math.cos(mid) * r;
-          const ty = y + Math.sin(mid) * r;
-
-          // Línea guía si va afuera
-          if (useOutside) {
-            const lx1 = x + Math.cos(mid) * (outerRadius - 2);
-            const ly1 = y + Math.sin(mid) * (outerRadius - 2);
-            const lx2 = x + Math.cos(mid) * (outerRadius + outsideOffset - 6);
-            const ly2 = y + Math.sin(mid) * (outerRadius + outsideOffset - 6);
-
-            ctx.save();
-            ctx.strokeStyle = "rgba(0,0,0,0.35)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(lx1, ly1);
-            ctx.lineTo(lx2, ly2);
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          // Texto con borde para que se lea siempre
           ctx.save();
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = "rgba(0,0,0,0.55)";
+          ctx.lineWidth = strokeWidth;
+          ctx.strokeStyle = strokeStyle;
           ctx.strokeText(text, tx, ty);
-          ctx.fillStyle = "#ffffff";
+          ctx.fillStyle = fillStyle;
           ctx.fillText(text, tx, ty);
           ctx.restore();
         }
 
-        // ======= BARRAS =======
+        // ======= BARRAS (% encima) =======
         if (isBar) {
           const pos = element.tooltipPosition?.();
           if (!pos) return;
@@ -139,10 +145,10 @@ const percentLabelsPlugin = {
           const ty = pos.y - 12;
 
           ctx.save();
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = "rgba(0,0,0,0.55)";
+          ctx.lineWidth = strokeWidth;
+          ctx.strokeStyle = strokeStyle;
           ctx.strokeText(text, tx, ty);
-          ctx.fillStyle = "#ffffff";
+          ctx.fillStyle = fillStyle;
           ctx.fillText(text, tx, ty);
           ctx.restore();
         }
@@ -419,7 +425,7 @@ function contarPorSentimiento(data) {
 }
 
 /* =============================
-   PIE GENÉRICO (% siempre)
+   PIE GENÉRICO (% dentro SIEMPRE)
 ============================= */
 function crearGraficoPie(id, pack, colores) {
   const ctx = document.getElementById(id);
@@ -451,9 +457,15 @@ function crearGraficoPie(id, pack, colores) {
           },
         },
         percentLabelsPlugin: {
-          outsideThreshold: 4,
-          outsideOffset: 20,
+          // unificado
           fontSize: 12,
+          minFontSize: 9,
+          autoScale: true,
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 700,
+          strokeWidth: 3,
+          strokeStyle: "rgba(0,0,0,0.55)",
+          fillStyle: "#ffffff",
         },
       },
     },
@@ -503,9 +515,14 @@ function crearGraficoPieSentimiento(id, pack, colors) {
           },
         },
         percentLabelsPlugin: {
-          outsideThreshold: 4,
-          outsideOffset: 20,
           fontSize: 12,
+          minFontSize: 9,
+          autoScale: true,
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 700,
+          strokeWidth: 3,
+          strokeStyle: "rgba(0,0,0,0.55)",
+          fillStyle: "#ffffff",
         },
       },
     },
@@ -549,7 +566,16 @@ function crearGraficoBarras(id, pack, colors) {
             },
           },
         },
-        percentLabelsPlugin: { fontSize: 12 },
+        percentLabelsPlugin: {
+          fontSize: 12,
+          minFontSize: 9,
+          autoScale: true,
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 700,
+          strokeWidth: 3,
+          strokeStyle: "rgba(0,0,0,0.55)",
+          fillStyle: "#ffffff",
+        },
       },
     },
   });
@@ -600,9 +626,15 @@ function crearGraficoGauge(data, id) {
           },
         },
         percentLabelsPlugin: {
-          outsideThreshold: 3,
-          outsideOffset: 18,
-          fontSize: 12,
+          // gauge suele necesitar un toque más pequeño si hay poco espacio
+          fontSize: 11,
+          minFontSize: 9,
+          autoScale: true,
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 700,
+          strokeWidth: 3,
+          strokeStyle: "rgba(0,0,0,0.55)",
+          fillStyle: "#ffffff",
         },
       },
     },

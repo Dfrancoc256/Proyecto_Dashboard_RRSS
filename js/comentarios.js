@@ -5,6 +5,124 @@ let chartCanal = null;
 
 const norm = (v) => String(v ?? "").trim().toLowerCase();
 
+/* ======== helpers % (mismos del dashboard) ======== */
+function toPercentWithCounts(datasetCounts) {
+  const labels = Object.keys(datasetCounts || {});
+  const counts = labels.map((k) => Number(datasetCounts[k]) || 0);
+  const total = counts.reduce((a, b) => a + b, 0) || 1;
+  const percents = counts.map((v) => +((v / total) * 100).toFixed(1));
+  return { labels, counts, percents, total };
+}
+
+function fmtPercent(p) {
+  const n = Number(p) || 0;
+  if (n === 0) return "0%";
+  if (n < 1) return "<1%";
+  return `${n}%`;
+}
+
+/* ======== plugin % dentro (mismo estilo) ======== */
+const percentLabelsPlugin = {
+  id: "percentLabelsPlugin",
+  afterDatasetsDraw(chart, args, pluginOptions) {
+    const { ctx } = chart;
+    const opts = pluginOptions || {};
+
+    const fontFamily = opts.fontFamily || "Poppins, sans-serif";
+    const fontWeight = opts.fontWeight || 700;
+
+    const baseFontSize = Number(opts.fontSize || 12);
+    const autoScale = opts.autoScale !== false; // default true
+    const minFontSize = Number(opts.minFontSize || 9);
+
+    const strokeWidth = Number(opts.strokeWidth || 3);
+    const strokeStyle = opts.strokeStyle || "rgba(0,0,0,0.55)";
+    const fillStyle = opts.fillStyle || "#ffffff";
+
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex);
+      if (!meta || meta.hidden) return;
+
+      const type = chart.config.type;
+      const isPie = type === "pie" || type === "doughnut";
+      const isBar = type === "bar";
+      if (!isPie && !isBar) return;
+
+      const labelCount = Array.isArray(chart.data?.labels) ? chart.data.labels.length : 0;
+
+      let fontSize = baseFontSize;
+      if (autoScale && isPie) {
+        if (labelCount >= 18) fontSize = Math.max(minFontSize, baseFontSize - 4);
+        else if (labelCount >= 14) fontSize = Math.max(minFontSize, baseFontSize - 3);
+        else if (labelCount >= 10) fontSize = Math.max(minFontSize, baseFontSize - 2);
+        else if (labelCount >= 7) fontSize = Math.max(minFontSize, baseFontSize - 1);
+      }
+
+      ctx.save();
+      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      meta.data.forEach((element, index) => {
+        const val = Number(dataset.data?.[index]) || 0;
+        if (val <= 0) return;
+
+        const text = fmtPercent(val);
+
+        if (isPie) {
+          const props = element.getProps(
+            ["x", "y", "startAngle", "endAngle", "outerRadius", "innerRadius"],
+            true
+          );
+
+          const { x, y, startAngle, endAngle, outerRadius, innerRadius } = props;
+          const mid = (startAngle + endAngle) / 2;
+
+          const span = outerRadius - innerRadius;
+          const factor = (innerRadius > 0) ? 0.62 : 0.55;
+          const rInside = innerRadius + span * factor;
+
+          const tx = x + Math.cos(mid) * rInside;
+          const ty = y + Math.sin(mid) * rInside;
+
+          ctx.save();
+          ctx.lineWidth = strokeWidth;
+          ctx.strokeStyle = strokeStyle;
+          ctx.strokeText(text, tx, ty);
+          ctx.fillStyle = fillStyle;
+          ctx.fillText(text, tx, ty);
+          ctx.restore();
+        }
+
+        if (isBar) {
+          const pos = element.tooltipPosition?.();
+          if (!pos) return;
+          const tx = pos.x;
+          const ty = pos.y - 12;
+
+          ctx.save();
+          ctx.lineWidth = strokeWidth;
+          ctx.strokeStyle = strokeStyle;
+          ctx.strokeText(text, tx, ty);
+          ctx.fillStyle = fillStyle;
+          ctx.fillText(text, tx, ty);
+          ctx.restore();
+        }
+      });
+
+      ctx.restore();
+    });
+  },
+};
+
+try {
+  const exists = Chart?.registry?.plugins?.get?.("percentLabelsPlugin");
+  if (!exists) Chart.register(percentLabelsPlugin);
+} catch {
+  try { Chart.register(percentLabelsPlugin); } catch {}
+}
+
+/* ======== fechas ======== */
 function obtenerFecha(valor) {
   if (!valor) return null;
   const s = String(valor).trim();
@@ -162,30 +280,52 @@ function renderDetalle(data) {
   if (next) next.disabled = page >= pages;
 }
 
-/* ========= chart ========= */
+/* ========= chart (PIE con % dentro) ========= */
 function renderChartCanal(data) {
   const ctx = document.getElementById("anaChartCanal");
   if (!ctx) return;
 
   const conteo = contarPorCampo(data, "medio");
-  const labels = Object.keys(conteo);
-  const values = Object.values(conteo);
+  const pack = toPercentWithCounts(conteo);
 
   if (chartCanal) chartCanal.destroy();
 
   chartCanal = new Chart(ctx, {
     type: "pie",
     data: {
-      labels,
+      labels: pack.labels,
       datasets: [{
-        data: values,
+        data: pack.percents,     // % visible (para el plugin)
+        _counts: pack.counts,    // tooltip
         backgroundColor: ["#2F66F5", "#54C0F2", "#10B981", "#F9B233", "#A3A3A3", "#4F46E5", "#111827"],
         borderColor: "#fff",
         borderWidth: 2
       }]
     },
     options: {
-      plugins: { legend: { position: "right" } }
+      plugins: {
+        legend: { position: "right" },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const idx = context.dataIndex;
+              const n = context.dataset._counts?.[idx] ?? 0;
+              const p = context.raw;
+              return `${context.label}: ${n} (${fmtPercent(p)})`;
+            }
+          }
+        },
+        percentLabelsPlugin: {
+          fontSize: 12,
+          minFontSize: 9,
+          autoScale: true,
+          fontFamily: "Poppins, sans-serif",
+          fontWeight: 700,
+          strokeWidth: 3,
+          strokeStyle: "rgba(0,0,0,0.55)",
+          fillStyle: "#ffffff",
+        }
+      }
     }
   });
 }
@@ -282,23 +422,42 @@ export async function initComentarios() {
   if (prev) prev.onclick = () => {
     if (page > 1) {
       page--;
-      renderDetalle((dataFiltered.length ? dataFiltered : dataAll));
+      // mantener orden consistente (fecha desc) al paginar
+      const base = (dataFiltered.length ? dataFiltered : dataAll);
+      const sorted = [...base].sort((a, b) => {
+        const da = obtenerFecha(a.time);
+        const db = obtenerFecha(b.time);
+        return (db?.getTime?.() || 0) - (da?.getTime?.() || 0);
+      });
+      renderDetalle(sorted);
     }
   };
 
   if (next) next.onclick = () => {
     const size = getPageSize();
-    const total = (dataFiltered.length ? dataFiltered : dataAll).length;
+    const base = (dataFiltered.length ? dataFiltered : dataAll);
+    const total = base.length;
     const pages = Math.max(1, Math.ceil(total / size));
     if (page < pages) {
       page++;
-      renderDetalle((dataFiltered.length ? dataFiltered : dataAll));
+      const sorted = [...base].sort((a, b) => {
+        const da = obtenerFecha(a.time);
+        const db = obtenerFecha(b.time);
+        return (db?.getTime?.() || 0) - (da?.getTime?.() || 0);
+      });
+      renderDetalle(sorted);
     }
   };
 
   if (pageSize) pageSize.onchange = () => {
     page = 1;
-    renderDetalle((dataFiltered.length ? dataFiltered : dataAll));
+    const base = (dataFiltered.length ? dataFiltered : dataAll);
+    const sorted = [...base].sort((a, b) => {
+      const da = obtenerFecha(a.time);
+      const db = obtenerFecha(b.time);
+      return (db?.getTime?.() || 0) - (da?.getTime?.() || 0);
+    });
+    renderDetalle(sorted);
   };
 
   // primer render

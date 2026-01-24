@@ -152,6 +152,17 @@
   padding: 12px 14px;
 }
 
+/* ===========================
+   ✅ FIX: CANVAS ESTABLE
+   - Evita deformación/recorte al crecer data o cambiar tamaño
+=========================== */
+.ana-card-body canvas{
+  width: 100% !important;
+  height: 320px !important; /* estable para pie y lectura de % */
+  display: block;
+}
+
+/* tablas */
 .ana-table-wrap{
   max-height: 420px;
   overflow: auto;
@@ -235,4 +246,9 @@
   .ana-kpis{ grid-template-columns: 1fr 1fr; }
   .ana-grid-top{ grid-template-columns: 1fr; }
   .ana-grid-bottom{ grid-template-columns: 1fr; }
+
+  /* ✅ canvas más bajo en pantallas pequeñas */
+  .ana-card-body canvas{
+    height: 260px !important;
+  }
 }
