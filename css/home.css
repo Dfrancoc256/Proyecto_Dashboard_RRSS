@@ -72,7 +72,9 @@
   background: #ffffff44;
 }
 
-/* === CONTENIDO PRINCIPAL === */
+/* === CONTENIDO PRINCIPAL ===
+   ✅ Tu HTML usa <main id="content">
+*/
 #content {
   flex: 1;
   background: #f8f9fc;
@@ -105,8 +107,9 @@
 }
 
 /* ======== BARRA DE ESTADO ======== */
+/* Base */
 .status-bar {
-  display: flex;
+  display: flex;              /* ✅ para centrar bonito */
   justify-content: center;
   align-items: center;
   gap: 8px;
@@ -122,17 +125,17 @@
 
 /* ✅ Estados */
 .status-bar.ok {
-  background: linear-gradient(90deg, #10B981, #34D399);
+  background: linear-gradient(90deg, #10B981, #34D399); /* verde */
   box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25);
 }
 
 .status-bar.info {
-  background: linear-gradient(90deg, #2f66f5, #54c0f2);
+  background: linear-gradient(90deg, #2f66f5, #54c0f2); /* azul */
   box-shadow: 0 6px 18px rgba(47, 102, 245, 0.25);
 }
 
 .status-bar.error {
-  background: linear-gradient(90deg, #EF4444, #F87171);
+  background: linear-gradient(90deg, #EF4444, #F87171); /* rojo */
   box-shadow: 0 6px 18px rgba(239, 68, 68, 0.25);
 }
 
@@ -315,34 +318,4 @@
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* =========================================================
-   ✅ FIX CHARTS (SIN ROMPER EL LAYOUT)
-   - Igualamos tamaño visual de los gráficos
-   - Evitamos que barras queden pequeñas con mucho espacio
-   - Centramos el canvas para que no “salte” al animar
-========================================================= */
-
-.chart-card canvas{
-  display: block;
-  margin: 0 auto;
-  max-width: 100%;
-}
-
-/* Pies (País / Medio / Sentimiento) -> mismo tamaño */
-#chartPais,
-#chartMedio,
-#chartSentimiento{
-  height: 300px !important;
-}
-
-/* Gauge (Medidor) -> un poco más alto, para que se vea “pro” */
-#chartMedidor{
-  height: 320px !important;
-}
-
-/* Barras (Canales) -> más alto para que no se mire chiquito */
-#chartCanales{
-  height: 320px !important;
 }
