@@ -45,7 +45,7 @@ function fmtPercent(p) {
 }
 
 /* =============================
-   ✅ PLUGIN: % visible SIEMPRE + contorno blanco
+   ✅ PLUGIN: % visible SIEMPRE (SIN contorno blanco)
    - Pie/Doughnut: % dentro, y si es pequeño/no cabe -> afuera con línea
    - Bar: % arriba de cada barra
 ============================= */
@@ -64,15 +64,15 @@ const percentLabelsPlugin = {
     const outsideOffset =
       typeof opts.outsideOffset === "number" ? opts.outsideOffset : 20;
 
-    // Si el arco es muy corto, también sacamos afuera (mejor para “muchos slices”)
+    // Si el arco es muy corto, también sacamos afuera
     const minArcPx =
       typeof opts.minArcPx === "number" ? opts.minArcPx : 26;
 
-    // Estilo texto
-    const strokeWidth =
-      typeof opts.strokeWidth === "number" ? opts.strokeWidth : 4;
-    const strokeColor = opts.strokeColor || "#ffffff"; // ✅ contorno blanco
-    const fillColor = opts.fillColor || "#111827";     // relleno oscuro (contrasta)
+    // Estilo texto (SIN STROKE)
+    const fillColor = opts.fillColor || "#111827"; // texto oscuro
+    const shadowColor = opts.shadowColor || "rgba(0,0,0,0.35)";
+    const shadowBlur = typeof opts.shadowBlur === "number" ? opts.shadowBlur : 3;
+    const shadowOffsetY = typeof opts.shadowOffsetY === "number" ? opts.shadowOffsetY : 1;
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       const meta = chart.getDatasetMeta(datasetIndex);
@@ -87,6 +87,13 @@ const percentLabelsPlugin = {
       ctx.font = `700 ${fontSize}px ${fontFamily}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
+      ctx.fillStyle = fillColor;
+
+      // ✅ Sombra sutil para legibilidad (sin fondo ni contorno)
+      ctx.shadowColor = shadowColor;
+      ctx.shadowBlur = shadowBlur;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = shadowOffsetY;
 
       meta.data.forEach((element, index) => {
         const val = Number(dataset.data?.[index]) || 0; // % visible
@@ -104,7 +111,7 @@ const percentLabelsPlugin = {
           const { x, y, startAngle, endAngle, outerRadius, innerRadius } = props;
           const mid = (startAngle + endAngle) / 2;
 
-          // “espacio” aproximado disponible (arco)
+          // espacio aproximado disponible (arco)
           const arcLen = Math.abs(endAngle - startAngle) * outerRadius;
 
           const rInside = innerRadius + (outerRadius - innerRadius) * 0.55;
@@ -124,7 +131,12 @@ const percentLabelsPlugin = {
             const lx2 = x + Math.cos(mid) * (outerRadius + outsideOffset - 8);
             const ly2 = y + Math.sin(mid) * (outerRadius + outsideOffset - 8);
 
+            // Línea guía SIN sombra (para que no se vea borrosa)
             ctx.save();
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
             ctx.strokeStyle = "rgba(17,24,39,0.35)";
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -133,7 +145,6 @@ const percentLabelsPlugin = {
             ctx.stroke();
             ctx.restore();
 
-            // Ajuste para que no quede justo en la punta
             const side = Math.cos(mid) >= 0 ? 1 : -1;
             tx += side * 10;
             ctx.textAlign = side === 1 ? "left" : "right";
@@ -141,14 +152,8 @@ const percentLabelsPlugin = {
             ctx.textAlign = "center";
           }
 
-          // Texto con contorno blanco (stroke) + relleno oscuro
-          ctx.save();
-          ctx.lineWidth = strokeWidth;
-          ctx.strokeStyle = strokeColor;
-          ctx.strokeText(text, tx, ty);
-          ctx.fillStyle = fillColor;
+          // ✅ SOLO TEXTO (sin stroke)
           ctx.fillText(text, tx, ty);
-          ctx.restore();
         }
 
         // ======= BARRAS =======
@@ -161,10 +166,6 @@ const percentLabelsPlugin = {
 
           ctx.save();
           ctx.textAlign = "center";
-          ctx.lineWidth = strokeWidth;
-          ctx.strokeStyle = strokeColor; // contorno blanco
-          ctx.strokeText(text, tx, ty);
-          ctx.fillStyle = fillColor;
           ctx.fillText(text, tx, ty);
           ctx.restore();
         }
@@ -174,6 +175,7 @@ const percentLabelsPlugin = {
     });
   },
 };
+
 
 // Registrar plugin solo 1 vez
 try {
