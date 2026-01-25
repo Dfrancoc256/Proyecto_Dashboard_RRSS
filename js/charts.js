@@ -32,7 +32,6 @@ function toPercentWithCounts(datasetCounts) {
   const labels = Object.keys(datasetCounts || {});
   const counts = labels.map((k) => Number(datasetCounts[k]) || 0);
   const total = counts.reduce((a, b) => a + b, 0) || 1;
-
   const percents = counts.map((v) => +((v / total) * 100).toFixed(1));
   return { labels, counts, percents, total };
 }
@@ -45,9 +44,7 @@ function fmtPercent(p) {
 }
 
 /* =============================
-   ✅ PLUGIN: % visible SIEMPRE (SIN contorno blanco)
-   - Pie/Doughnut: % dentro, y si es pequeño/no cabe -> afuera con línea
-   - Bar: % arriba de cada barra
+   ✅ PLUGIN: % visible SIEMPRE (SIN contorno)
 ============================= */
 const percentLabelsPlugin = {
   id: "percentLabelsPlugin",
@@ -58,19 +55,15 @@ const percentLabelsPlugin = {
     const fontSize = opts.fontSize || 12;
     const fontFamily = opts.fontFamily || "Poppins, sans-serif";
 
-    // Umbrales
     const outsideThreshold =
-      typeof opts.outsideThreshold === "number" ? opts.outsideThreshold : 4; // %
+      typeof opts.outsideThreshold === "number" ? opts.outsideThreshold : 4;
     const outsideOffset =
       typeof opts.outsideOffset === "number" ? opts.outsideOffset : 20;
-
-    // Si el arco es muy corto, también sacamos afuera
     const minArcPx =
       typeof opts.minArcPx === "number" ? opts.minArcPx : 26;
 
-    // Estilo texto (SIN STROKE)
-    const fillColor = opts.fillColor || "#111827"; // texto oscuro
-    const shadowColor = opts.shadowColor || "rgba(0,0,0,0.35)";
+    const fillColor = opts.fillColor || "#111827";
+    const shadowColor = opts.shadowColor || "rgba(0,0,0,0.30)";
     const shadowBlur = typeof opts.shadowBlur === "number" ? opts.shadowBlur : 3;
     const shadowOffsetY = typeof opts.shadowOffsetY === "number" ? opts.shadowOffsetY : 1;
 
@@ -89,19 +82,18 @@ const percentLabelsPlugin = {
       ctx.textBaseline = "middle";
       ctx.fillStyle = fillColor;
 
-      // ✅ Sombra sutil para legibilidad (sin fondo ni contorno)
+      // sombra sutil (solo texto)
       ctx.shadowColor = shadowColor;
       ctx.shadowBlur = shadowBlur;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = shadowOffsetY;
 
       meta.data.forEach((element, index) => {
-        const val = Number(dataset.data?.[index]) || 0; // % visible
+        const val = Number(dataset.data?.[index]) || 0;
         if (val <= 0) return;
 
         const text = fmtPercent(val);
 
-        // ======= PIE / DOUGHNUT =======
         if (isPie) {
           const props = element.getProps(
             ["x", "y", "startAngle", "endAngle", "outerRadius", "innerRadius"],
@@ -110,29 +102,23 @@ const percentLabelsPlugin = {
 
           const { x, y, startAngle, endAngle, outerRadius, innerRadius } = props;
           const mid = (startAngle + endAngle) / 2;
-
-          // espacio aproximado disponible (arco)
           const arcLen = Math.abs(endAngle - startAngle) * outerRadius;
 
           const rInside = innerRadius + (outerRadius - innerRadius) * 0.55;
-
-          // Criterios para sacarlo afuera
           const useOutside = val < outsideThreshold || arcLen < minArcPx;
-
           const r = useOutside ? outerRadius + outsideOffset : rInside;
 
           let tx = x + Math.cos(mid) * r;
           let ty = y + Math.sin(mid) * r;
 
-          // Si va afuera: línea guía + alineación izquierda/derecha
           if (useOutside) {
             const lx1 = x + Math.cos(mid) * (outerRadius - 2);
             const ly1 = y + Math.sin(mid) * (outerRadius - 2);
             const lx2 = x + Math.cos(mid) * (outerRadius + outsideOffset - 8);
             const ly2 = y + Math.sin(mid) * (outerRadius + outsideOffset - 8);
 
-            // Línea guía SIN sombra (para que no se vea borrosa)
             ctx.save();
+            // línea sin sombra
             ctx.shadowColor = "transparent";
             ctx.shadowBlur = 0;
             ctx.shadowOffsetX = 0;
@@ -152,11 +138,9 @@ const percentLabelsPlugin = {
             ctx.textAlign = "center";
           }
 
-          // ✅ SOLO TEXTO (sin stroke)
           ctx.fillText(text, tx, ty);
         }
 
-        // ======= BARRAS =======
         if (isBar) {
           const pos = element.tooltipPosition?.();
           if (!pos) return;
@@ -176,7 +160,7 @@ const percentLabelsPlugin = {
   },
 };
 
-// Registrar plugin solo 1 vez
+// registrar 1 vez
 try {
   const exists = Chart?.registry?.plugins?.get?.("percentLabelsPlugin");
   if (!exists) Chart.register(percentLabelsPlugin);
@@ -185,21 +169,31 @@ try {
 }
 
 /* =============================
-   ✅ CONFIG: Leyenda abajo y ordenada
+   ✅ Leyenda abajo (estable)
 ============================= */
-function legendBottomConfig(labelsCount = 4) {
-  // 1 o 2 filas según cantidad
-  // (si hay muchas, Chart las pone en varias filas automáticamente)
+function legendBottomConfig() {
   return {
     position: "bottom",
     align: "center",
     labels: {
-      boxWidth: 40,
+      boxWidth: 14,
       boxHeight: 10,
-      padding: 12,
-      usePointStyle: false,
+      padding: 10,
       font: { size: 12, weight: "500" },
     },
+  };
+}
+
+/* =============================
+   ✅ BASE OPTIONS (anti-loop)
+   - resizeDelay reduce “recalculo” continuo
+   - maintainAspectRatio false + CSS con height estable (SIN !important)
+============================= */
+function baseChartOptions() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    resizeDelay: 150,
   };
 }
 
@@ -210,9 +204,7 @@ export async function initCharts() {
   await cargarDatos();
 
   const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
-  if (btnAplicarFiltros) {
-    btnAplicarFiltros.onclick = aplicarFiltros;
-  }
+  if (btnAplicarFiltros) btnAplicarFiltros.onclick = aplicarFiltros;
 }
 
 /* =============================
@@ -229,8 +221,8 @@ async function cargarDatos() {
       datosGlobales = Array.isArray(lista) ? lista : [];
 
       poblarFiltroUsuarios(datosGlobales);
-
       renderDashboard(datosGlobales);
+
       ocultarEstado();
       return;
     }
@@ -249,7 +241,6 @@ function parseFechaSheets(valor) {
   if (valor instanceof Date) return valor;
 
   const s = String(valor).trim();
-
   const isoTry = new Date(s);
   if (!isNaN(isoTry)) return isoTry;
 
@@ -332,7 +323,6 @@ function aplicarFiltros() {
     let valido = true;
 
     const dItem = parseFechaSheets(item.time);
-
     if ((dDesde || dHasta) && !dItem) valido = false;
 
     if (dDesde && dItem && dItem < dDesde) valido = false;
@@ -341,7 +331,6 @@ function aplicarFiltros() {
     if (pais !== "todos" && normalizarTexto(item.pais) !== pais) valido = false;
     if (medio !== "todos" && normalizarTexto(item.medio) !== medio) valido = false;
     if (sentimiento !== "todos" && normalizarTexto(obtenerSentimiento(item)) !== sentimiento) valido = false;
-
     if (usuario !== "todos" && normalizarTexto(item.email) !== usuario) valido = false;
 
     return valido;
@@ -459,14 +448,14 @@ function contarPorSentimiento(data) {
 }
 
 /* =============================
-   PIE GENÉRICO (% siempre)
-   ✅ Leyenda abajo para igualar tamaño
+   PIE GENÉRICO
+   ✅ Leyenda ABAJO (y tamaño estable)
 ============================= */
 function crearGraficoPie(id, pack, colores) {
-  const ctx = document.getElementById(id);
-  if (!ctx) return null;
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
 
-  return new Chart(ctx, {
+  return new Chart(canvas, {
     type: "pie",
     data: {
       labels: pack.labels,
@@ -479,11 +468,10 @@ function crearGraficoPie(id, pack, colores) {
       }],
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false, // ✅ clave para que todos se vean iguales
-      layout: { padding: { top: 8, bottom: 8, left: 8, right: 8 } },
+      ...baseChartOptions(),
+      layout: { padding: 8 },
       plugins: {
-        legend: legendBottomConfig(pack.labels.length), // ✅ abajo
+        legend: legendBottomConfig(),
         tooltip: {
           callbacks: {
             label: (context) => {
@@ -508,11 +496,11 @@ function crearGraficoPie(id, pack, colores) {
 
 /* =============================
    PIE SENTIMIENTO
-   ✅ Leyenda abajo para igualar tamaño
+   ✅ Leyenda ABAJO (y tamaño estable)
 ============================= */
 function crearGraficoPieSentimiento(id, pack, colors) {
-  const ctx = document.getElementById(id);
-  if (!ctx) return null;
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
 
   const colorPorEtiqueta = {
     "Positivo": colors.verde,
@@ -524,7 +512,7 @@ function crearGraficoPieSentimiento(id, pack, colors) {
 
   const background = pack.labels.map((l) => colorPorEtiqueta[l] || colors.gris);
 
-  return new Chart(ctx, {
+  return new Chart(canvas, {
     type: "pie",
     data: {
       labels: pack.labels,
@@ -537,11 +525,10 @@ function crearGraficoPieSentimiento(id, pack, colors) {
       }],
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false, // ✅ clave para que todos se vean iguales
-      layout: { padding: { top: 8, bottom: 8, left: 8, right: 8 } },
+      ...baseChartOptions(),
+      layout: { padding: 8 },
       plugins: {
-        legend: legendBottomConfig(pack.labels.length), // ✅ abajo
+        legend: legendBottomConfig(),
         tooltip: {
           callbacks: {
             label: (context) => {
@@ -565,13 +552,13 @@ function crearGraficoPieSentimiento(id, pack, colors) {
 }
 
 /* =============================
-   BARRAS (% encima)
+   BARRAS
 ============================= */
 function crearGraficoBarras(id, pack, colors) {
-  const ctx = document.getElementById(id);
-  if (!ctx) return null;
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
 
-  return new Chart(ctx, {
+  return new Chart(canvas, {
     type: "bar",
     data: {
       labels: pack.labels,
@@ -583,9 +570,8 @@ function crearGraficoBarras(id, pack, colors) {
       }],
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
+      ...baseChartOptions(),
+      layout: { padding: 10 },
       scales: {
         y: {
           beginAtZero: true,
@@ -594,6 +580,7 @@ function crearGraficoBarras(id, pack, colors) {
         },
       },
       plugins: {
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: (ctx) => {
@@ -614,20 +601,19 @@ function crearGraficoBarras(id, pack, colors) {
    GAUGE (%)
 ============================= */
 function crearGraficoGauge(data, id) {
-  const ctx = document.getElementById(id);
-  if (!ctx) return null;
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
 
   const positivas = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "positivo").length;
   const neutrales = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "neutral").length;
   const negativas = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
 
   const total = positivas + neutrales + negativas || 1;
-
   const pPos = +((positivas / total) * 100).toFixed(1);
   const pNeu = +((neutrales / total) * 100).toFixed(1);
   const pNeg = +((negativas / total) * 100).toFixed(1);
 
-  return new Chart(ctx, {
+  return new Chart(canvas, {
     type: "doughnut",
     data: {
       labels: ["Positivas", "Neutrales", "Negativas"],
@@ -641,10 +627,9 @@ function crearGraficoGauge(data, id) {
       }],
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      ...baseChartOptions(),
       cutout: "70%",
-      layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
+      layout: { padding: 10 },
       plugins: {
         legend: { display: false },
         tooltip: {

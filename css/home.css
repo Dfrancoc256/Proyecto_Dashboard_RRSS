@@ -36,11 +36,7 @@
   align-items: center;
   padding: 20px 10px;
   box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
-}
-
-/* (Opcional) si crece el menú, permite scroll */
-.sidebar {
-  overflow-y: auto;
+  overflow-y: auto; /* scroll si crece */
 }
 
 .sidebar h2 {
@@ -72,9 +68,7 @@
   background: #ffffff44;
 }
 
-/* === CONTENIDO PRINCIPAL ===
-   ✅ Tu HTML usa <main id="content">
-*/
+/* === CONTENIDO PRINCIPAL === */
 #content {
   flex: 1;
   background: #f8f9fc;
@@ -107,9 +101,8 @@
 }
 
 /* ======== BARRA DE ESTADO ======== */
-/* Base */
 .status-bar {
-  display: flex;              /* ✅ para centrar bonito */
+  display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
@@ -123,19 +116,18 @@
   font-size: 0.95rem;
 }
 
-/* ✅ Estados */
 .status-bar.ok {
-  background: linear-gradient(90deg, #10B981, #34D399); /* verde */
+  background: linear-gradient(90deg, #10B981, #34D399);
   box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25);
 }
 
 .status-bar.info {
-  background: linear-gradient(90deg, #2f66f5, #54c0f2); /* azul */
+  background: linear-gradient(90deg, #2f66f5, #54c0f2);
   box-shadow: 0 6px 18px rgba(47, 102, 245, 0.25);
 }
 
 .status-bar.error {
-  background: linear-gradient(90deg, #EF4444, #F87171); /* rojo */
+  background: linear-gradient(90deg, #EF4444, #F87171);
   box-shadow: 0 6px 18px rgba(239, 68, 68, 0.25);
 }
 
@@ -223,7 +215,6 @@
   opacity: 0.9;
 }
 
-/* ======== RESPONSIVE FILTROS ======== */
 @media (max-width: 768px) {
   .filter-group {
     flex-direction: column;
@@ -289,12 +280,16 @@
   margin-bottom: 40px;
 }
 
+/* ✅ Card estable para que la leyenda abajo NO cambie alturas */
 .chart-card {
   background: white;
   border-radius: 12px;
   padding: 25px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
   transition: 0.3s ease;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-card:hover {
@@ -306,7 +301,29 @@
   text-align: center;
   color: #2f66f5;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
+}
+
+/* ✅ CLAVE anti-bucle:
+   - SIN !important
+   - height fijo y max-height para que el canvas no “crezca”
+*/
+.chart-card canvas {
+  display: block;
+  width: 100%;
+  height: 300px;
+  max-height: 300px;
+}
+
+/* ✅ Responsive: baja alto en móvil */
+@media (max-width: 768px) {
+  .charts {
+    grid-template-columns: 1fr;
+  }
+  .chart-card canvas {
+    height: 260px;
+    max-height: 260px;
+  }
 }
 
 /* ======== ANIMACIONES ======== */
