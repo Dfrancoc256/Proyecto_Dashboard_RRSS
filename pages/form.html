@@ -47,20 +47,22 @@
       <input type="text" id="medioOtro" name="medio_otro" placeholder="Escribe el medio..." />
     </div>
 
-    <!-- ✅ EMAIL (AGENTE) -->
-    <label>Correo del agente</label>
-    <input
-      type="email"
-      name="email"
-      id="emailAgente"
-      placeholder="tu_correo@gmail.com"
-      autocomplete="email"
-      required
-      readonly
-    />
-    <small style="display:block;margin-top:6px;opacity:.75;">
-      Se carga automáticamente con el usuario que inició sesión.
-    </small>
+    <!-- ✅ PRODUCTO (reemplaza Email) -->
+    <label>Producto</label>
+    <div class="combo" data-name="producto">
+      <input type="text" class="combo-input" placeholder="Selecciona un producto..." required value="Presta" />
+      <button type="button" class="combo-btn">▾</button>
+      <ul class="combo-list">
+        <li>Vana presta</li>
+        <li>Vana pay</li>
+        <li>Otro</li>
+      </ul>
+    </div>
+
+    <div id="productoOtroWrap" style="display:none;">
+      <label>Especifique producto</label>
+      <input type="text" id="productoOtro" name="producto_otro" placeholder="Escribe el producto..." />
+    </div>
   </fieldset>
 
   <!-- =========================
@@ -138,11 +140,14 @@
       <input type="text" id="ticketOtro" name="ticket_otro" placeholder="Escribe..." />
     </div>
 
-    <label>Link del ticket</label>
-    <input type="url" name="link_ticket" placeholder="https://..." />
+    <!-- ✅ Detalles ocultos: solo visibles si Ticket = "Sí" -->
+    <div id="ticketDetallesWrap" style="display:none;">
+      <label>Link del ticket</label>
+      <input type="url" name="link_ticket" placeholder="https://..." />
 
-    <label>Comentarios / Notas</label>
-    <textarea name="notas" placeholder="Notas internas del agente"></textarea>
+      <label>Comentarios / Notas</label>
+      <textarea name="notas" placeholder="Notas internas del agente"></textarea>
+    </div>
   </fieldset>
 
   <!-- =========================

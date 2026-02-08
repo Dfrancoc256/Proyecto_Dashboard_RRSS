@@ -18,6 +18,7 @@ function getUsuarioCorreo() {
 
 function normalizar(v) { return String(v ?? "").trim().toLowerCase(); }
 function esOtro(v) { const t = normalizar(v); return t === "otro" || t === "other"; }
+function esSi(v) { const t = normalizar(v); return t === "sí" || t === "si"; }
 
 function setHidden(form, name, value) {
   let inp = form.querySelector(`input[type="hidden"][name="${name}"]`);
@@ -83,14 +84,6 @@ function initCombo(combo) {
   });
 }
 
-function setDefaultEmailAgente() {
-  const email = document.getElementById("emailAgente") || document.querySelector('input[name="email"]');
-  if (!email) return;
-
-  const correo = getUsuarioCorreo();
-  if (correo && !email.value) email.value = correo;
-}
-
 function validarSentimiento(form) {
   const sel = form.querySelector("#sentimiento");
   if (!sel) return true;
@@ -109,6 +102,7 @@ function setupOtros() {
     { name: "medio", wrap: "medioOtroWrap", other: "medioOtro" },
     { name: "razon", wrap: "razonOtroWrap", other: "razonOtro" },
     { name: "ticket", wrap: "ticketOtroWrap", other: "ticketOtro" },
+    { name: "producto", wrap: "productoOtroWrap", other: "productoOtro" }, // ✅ nuevo
   ];
 
   map.forEach(cfg => {
@@ -138,14 +132,47 @@ function setupOtros() {
   });
 }
 
+function setupProductoDefault() {
+  const prod = document.querySelector('.combo[data-name="producto"] .combo-input');
+  if (!prod) return;
+  if (!prod.value || !prod.value.trim()) prod.value = "Presta";
+}
+
+function setupTicketDetalles() {
+  const combo = document.querySelector('.combo[data-name="ticket"]');
+  const input = combo?.querySelector(".combo-input");
+  const wrap = document.getElementById("ticketDetallesWrap");
+  if (!input || !wrap) return;
+
+  const link = document.querySelector('input[name="link_ticket"]');
+  const notas = document.querySelector('textarea[name="notas"]');
+
+  const toggle = () => {
+    const show = esSi(input.value);
+    wrap.style.display = show ? "block" : "none";
+
+    // Limpia campos si no se requiere ticket
+    if (!show) {
+      if (link) link.value = "";
+      if (notas) notas.value = "";
+    }
+  };
+
+  input.addEventListener("change", toggle);
+  input.addEventListener("input", toggle);
+  toggle();
+}
+
 function prepararForm() {
   const form = document.getElementById("gestionForm");
   if (!form) return;
 
   bindComboCloserOnce();
-  setDefaultEmailAgente();
   document.querySelectorAll(".combo").forEach(initCombo);
+
+  setupProductoDefault();
   setupOtros();
+  setupTicketDetalles();
 }
 
 async function onSubmit(e) {
@@ -156,6 +183,7 @@ async function onSubmit(e) {
 
   if (!validarSentimiento(form)) return;
 
+  // convierte combos a hidden inputs (para FormData)
   document.querySelectorAll(".combo").forEach(combo => {
     const name = combo.getAttribute("data-name");
     const val = combo.querySelector(".combo-input")?.value || "";
@@ -168,28 +196,39 @@ async function onSubmit(e) {
   const medio = String(fd.get("medio") || "").trim();
   const razon = String(fd.get("razon") || "").trim();
   const ticket = String(fd.get("ticket") || "").trim();
+  const producto = String(fd.get("producto") || "").trim();
 
   const paisFinal = esOtro(pais) ? (String(fd.get("pais_otro") || "").trim() || "Otro") : pais;
   const medioFinal = esOtro(medio) ? (String(fd.get("medio_otro") || "").trim() || "Otro") : medio;
   const razonFinal = esOtro(razon) ? (String(fd.get("razon_otro") || "").trim() || "Otro") : razon;
   const ticketFinal = esOtro(ticket) ? (String(fd.get("ticket_otro") || "").trim() || "Otro") : ticket;
 
-  const emailActual = String(fd.get("email") || "").trim();
+  const productoFinal = esOtro(producto)
+    ? (String(fd.get("producto_otro") || "").trim() || "Otro")
+    : (producto || "Presta");
+
+  // correo del agente desde sesión (sidebar)
+  const emailActual = String(getUsuarioCorreo() || "").trim();
   if (!emailActual) {
-    alert("⚠️ El correo del agente (Email) es obligatorio.");
-    (document.getElementById("emailAgente") || form.querySelector('input[name="email"]'))?.focus();
+    alert("⚠️ No se encontró el correo del agente en sesión (usuarioActivo).");
     return;
   }
+
+  // si NO selecciona "Sí", por seguridad mandamos vacío
+  const enviarDetalles = esSi(ticketFinal);
+  const linkTicket = enviarDetalles ? String(fd.get("link_ticket") || "").trim() : "";
+  const notas = enviarDetalles ? String(fd.get("notas") || "").trim() : "";
 
   const payload = {
     "Pais": paisFinal,
     "Medio": medioFinal,
+    "Producto": productoFinal,
     "Razon de contacto": razonFinal,
     "¿Necesitó ticket?": ticketFinal,
     "Comentario cliente": String(fd.get("comentario_cliente") || "").trim(),
-    "Link ticket": String(fd.get("link_ticket") || "").trim(),
+    "Link ticket": linkTicket,
     "Email": emailActual,
-    "Notas": String(fd.get("notas") || "").trim(),
+    "Notas": notas,
     "Sentimientos": String(fd.get("sentimiento") || "").trim(),
   };
 
@@ -205,7 +244,6 @@ async function onSubmit(e) {
     if (response.ok && result.ok === true) {
       alert("✅ Gestión guardada correctamente");
       form.reset();
-      setDefaultEmailAgente();
       prepararForm();
     } else {
       alert("⚠️ Error: " + (result.message || result.error || "No se pudo guardar"));
