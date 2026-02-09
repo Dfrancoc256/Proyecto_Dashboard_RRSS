@@ -48,29 +48,29 @@ function fmtPercent(p) {
 }
 
 /* =============================
-   ✅ PLUGIN: % visible SIEMPRE
-   - mejora: evita que en barras se vaya muy arriba
+   ✅ PLUGIN: % visible SIEMPRE (dentro del pie y sin salirse)
 ============================= */
 const percentLabelsPlugin = {
   id: "percentLabelsPlugin",
   afterDatasetsDraw(chart, args, pluginOptions) {
-    const { ctx } = chart;
+    const { ctx, chartArea } = chart;
     const opts = pluginOptions || {};
 
     const fontSize = opts.fontSize || 12;
     const fontFamily = opts.fontFamily || "Poppins, sans-serif";
 
-    const outsideThreshold =
-      typeof opts.outsideThreshold === "number" ? opts.outsideThreshold : 4;
-    const outsideOffset =
-      typeof opts.outsideOffset === "number" ? opts.outsideOffset : 20;
-    const minArcPx =
-      typeof opts.minArcPx === "number" ? opts.minArcPx : 26;
-
     const fillColor = opts.fillColor || "#111827";
     const shadowColor = opts.shadowColor || "rgba(0,0,0,0.30)";
     const shadowBlur = typeof opts.shadowBlur === "number" ? opts.shadowBlur : 3;
     const shadowOffsetY = typeof opts.shadowOffsetY === "number" ? opts.shadowOffsetY : 1;
+
+    // ✅ IMPORTANTE: fuerza que en PIE siempre sea dentro (evita que se recorte afuera)
+    const forceInsidePie = opts.forceInsidePie !== false; // por defecto TRUE
+
+    // padding para clamping
+    const pad = typeof opts.clampPadding === "number" ? opts.clampPadding : 8;
+
+    const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       const meta = chart.getDatasetMeta(datasetIndex);
@@ -81,23 +81,13 @@ const percentLabelsPlugin = {
       const isBar = type === "bar";
       if (!isPie && !isBar) return;
 
-      ctx.save();
-      ctx.font = `700 ${fontSize}px ${fontFamily}`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = fillColor;
-
-      ctx.shadowColor = shadowColor;
-      ctx.shadowBlur = shadowBlur;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = shadowOffsetY;
-
       meta.data.forEach((element, index) => {
         const val = Number(dataset.data?.[index]) || 0;
         if (val <= 0) return;
 
         const text = fmtPercent(val);
 
+        // ===== PIE / DOUGHNUT =====
         if (isPie) {
           const props = element.getProps(
             ["x", "y", "startAngle", "endAngle", "outerRadius", "innerRadius"],
@@ -108,61 +98,63 @@ const percentLabelsPlugin = {
           const mid = (startAngle + endAngle) / 2;
           const arcLen = Math.abs(endAngle - startAngle) * outerRadius;
 
-          const rInside = innerRadius + (outerRadius - innerRadius) * 0.55;
-          const useOutside = val < outsideThreshold || arcLen < minArcPx;
-          const r = useOutside ? outerRadius + outsideOffset : rInside;
+          // ✅ si es porción pequeña, bajamos un poco el font para que quepa
+          const smallSlice = arcLen < 30 || val < 1;
+          const fs = smallSlice ? Math.max(10, fontSize - 2) : fontSize;
+
+          // ✅ radio interno: siempre dentro
+          const rInside = innerRadius + (outerRadius - innerRadius) * (smallSlice ? 0.40 : 0.55);
+          const r = forceInsidePie ? rInside : rInside; // (dejado por claridad)
 
           let tx = x + Math.cos(mid) * r;
           let ty = y + Math.sin(mid) * r;
 
-          if (useOutside) {
-            const lx1 = x + Math.cos(mid) * (outerRadius - 2);
-            const ly1 = y + Math.sin(mid) * (outerRadius - 2);
-            const lx2 = x + Math.cos(mid) * (outerRadius + outsideOffset - 8);
-            const ly2 = y + Math.sin(mid) * (outerRadius + outsideOffset - 8);
-
-            ctx.save();
-            ctx.shadowColor = "transparent";
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-            ctx.strokeStyle = "rgba(17,24,39,0.35)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(lx1, ly1);
-            ctx.lineTo(lx2, ly2);
-            ctx.stroke();
-            ctx.restore();
-
-            const side = Math.cos(mid) >= 0 ? 1 : -1;
-            tx += side * 10;
-            ctx.textAlign = side === 1 ? "left" : "right";
-          } else {
-            ctx.textAlign = "center";
+          // ✅ Clamp: evita que el texto se salga del canvas/área del chart
+          if (chartArea) {
+            tx = clamp(tx, chartArea.left + pad, chartArea.right - pad);
+            ty = clamp(ty, chartArea.top + pad, chartArea.bottom - pad);
           }
 
+          ctx.save();
+          ctx.font = `700 ${fs}px ${fontFamily}`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = fillColor;
+
+          // sombra sutil (solo texto)
+          ctx.shadowColor = shadowColor;
+          ctx.shadowBlur = shadowBlur;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = shadowOffsetY;
+
           ctx.fillText(text, tx, ty);
+          ctx.restore();
+          return;
         }
 
+        // ===== BAR =====
         if (isBar) {
           const pos = element.tooltipPosition?.();
           if (!pos) return;
 
-          const areaTop = chart.chartArea?.top ?? 0;
           const tx = pos.x;
-          let ty = pos.y - 14;
-
-          // evita que el texto suba fuera del canvas
-          if (ty < areaTop + 10) ty = areaTop + 10;
+          const ty = pos.y - 14;
 
           ctx.save();
+          ctx.font = `700 ${fontSize}px ${fontFamily}`;
           ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = fillColor;
+
+          ctx.shadowColor = shadowColor;
+          ctx.shadowBlur = shadowBlur;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = shadowOffsetY;
+
           ctx.fillText(text, tx, ty);
           ctx.restore();
         }
       });
-
-      ctx.restore();
     });
   },
 };
@@ -174,6 +166,7 @@ try {
 } catch {
   try { Chart.register(percentLabelsPlugin); } catch {}
 }
+
 
 /* =============================
    ✅ Leyenda abajo (estable)
