@@ -73,7 +73,7 @@
   flex: 1;
   background: #f8f9fc;
   padding: 20px 40px;
-  overflow-y: auto;     /* ✅ scroll aquí */
+  overflow-y: auto;     
   overflow-x: hidden;
   box-sizing: border-box;
   height: 100vh;
@@ -225,7 +225,7 @@
   }
 }
 
-/* ======== RESUMEN EJECUTIVO ======== */
+/* ======== RESUMEN ======== */
 .summary-banner {
   background: linear-gradient(90deg, #2f66f5, #54c0f2);
   color: white;
@@ -280,7 +280,7 @@
   margin-bottom: 40px;
 }
 
-/* ✅ Card estable para que la leyenda abajo NO cambie alturas */
+/*  Card estable para que la leyenda abajo NO cambie alturas */
 .chart-card {
   background: white;
   border-radius: 12px;
@@ -315,15 +315,11 @@
   max-height: 300px;
 }
 
-/* ✅ IMPORTANTE:
-   Para evitar huecos en el grid cuando tienes 6 gráficos,
-   NO permitimos que .wide ocupe 2 columnas en desktop.
-*/
 .chart-card.wide {
   grid-column: auto;
 }
 
-/* ✅ Responsive: baja alto en móvil */
+/* ✅ Responsive */
 @media (max-width: 768px) {
   .charts {
     grid-template-columns: 1fr;
