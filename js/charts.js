@@ -101,7 +101,7 @@ const percentLabelsPlugin = {
 
           // ✅ si es porción pequeña, bajamos un poco el font para que quepa
           const smallSlice = arcLen < 30 || val < 1;
-          const fs = smallSlice ? Math.max(10, fontSize - 2) : fontSize;
+          const fs = smallSlice ? Math.max(11, fontSize - 1) : fontSize;
 
           // ✅ radio interno: siempre dentro
           const rInside = innerRadius + (outerRadius - innerRadius) * (smallSlice ? 0.40 : 0.55);
