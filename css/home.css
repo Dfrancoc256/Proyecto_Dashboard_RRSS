@@ -315,11 +315,12 @@
   max-height: 300px;
 }
 
-/* ✅ Soporte real para .wide (antes no existía y no hacía nada) */
-@media (min-width: 900px) {
-  .chart-card.wide {
-    grid-column: span 2;
-  }
+/* ✅ IMPORTANTE:
+   Para evitar huecos en el grid cuando tienes 6 gráficos,
+   NO permitimos que .wide ocupe 2 columnas en desktop.
+*/
+.chart-card.wide {
+  grid-column: auto;
 }
 
 /* ✅ Responsive: baja alto en móvil */
@@ -327,12 +328,10 @@
   .charts {
     grid-template-columns: 1fr;
   }
+
   .chart-card canvas {
     height: 260px;
     max-height: 260px;
-  }
-  .chart-card.wide {
-    grid-column: auto;
   }
 }
 
