@@ -1,5 +1,5 @@
 // js/metrics.js
-// Helpers para métricas (opcional). Compatible con config.js
+
 
 function normalizarTexto(v) {
   return String(v ?? "").trim().toLowerCase();
