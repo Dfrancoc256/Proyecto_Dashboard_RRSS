@@ -5,6 +5,10 @@ let charts = [];
 const normalizarTexto = (valor) => String(valor ?? "").trim().toLowerCase();
 const obtenerSentimiento = (row) => row.sentimiento ?? row.sentimientos ?? "";
 
+// ✅ soporte flexible para Producto desde Sheets/backend
+const obtenerProducto = (row) =>
+  row?.producto ?? row?.Producto ?? row?.["Producto"] ?? row?.productos ?? row?.["productos"] ?? "";
+
 /* =============================
    ✅ STATUS BAR (arriba)
 ============================= */
@@ -44,7 +48,8 @@ function fmtPercent(p) {
 }
 
 /* =============================
-   ✅ PLUGIN: % visible SIEMPRE (SIN contorno)
+   ✅ PLUGIN: % visible SIEMPRE
+   - mejora: evita que en barras se vaya muy arriba
 ============================= */
 const percentLabelsPlugin = {
   id: "percentLabelsPlugin",
@@ -82,7 +87,6 @@ const percentLabelsPlugin = {
       ctx.textBaseline = "middle";
       ctx.fillStyle = fillColor;
 
-      // sombra sutil (solo texto)
       ctx.shadowColor = shadowColor;
       ctx.shadowBlur = shadowBlur;
       ctx.shadowOffsetX = 0;
@@ -118,7 +122,6 @@ const percentLabelsPlugin = {
             const ly2 = y + Math.sin(mid) * (outerRadius + outsideOffset - 8);
 
             ctx.save();
-            // línea sin sombra
             ctx.shadowColor = "transparent";
             ctx.shadowBlur = 0;
             ctx.shadowOffsetX = 0;
@@ -145,8 +148,12 @@ const percentLabelsPlugin = {
           const pos = element.tooltipPosition?.();
           if (!pos) return;
 
+          const areaTop = chart.chartArea?.top ?? 0;
           const tx = pos.x;
-          const ty = pos.y - 14;
+          let ty = pos.y - 14;
+
+          // evita que el texto suba fuera del canvas
+          if (ty < areaTop + 10) ty = areaTop + 10;
 
           ctx.save();
           ctx.textAlign = "center";
@@ -186,8 +193,6 @@ function legendBottomConfig() {
 
 /* =============================
    ✅ BASE OPTIONS (anti-loop)
-   - resizeDelay reduce “recalculo” continuo
-   - maintainAspectRatio false + CSS con height estable (SIN !important)
 ============================= */
 function baseChartOptions() {
   return {
@@ -221,6 +226,7 @@ async function cargarDatos() {
       datosGlobales = Array.isArray(lista) ? lista : [];
 
       poblarFiltroUsuarios(datosGlobales);
+      poblarFiltroProducto(datosGlobales); // ✅ nuevo
       renderDashboard(datosGlobales);
 
       ocultarEstado();
@@ -294,8 +300,37 @@ function poblarFiltroUsuarios(data) {
     sel.appendChild(opt);
   });
 
-  if (emails.includes(actual)) sel.value = actual;
-  else sel.value = "todos";
+  sel.value = emails.includes(actual) ? actual : "todos";
+}
+
+/* =============================
+   ✅ FILTRO PRODUCTO (nuevo)
+============================= */
+function poblarFiltroProducto(data) {
+  const sel = document.getElementById("filterProducto");
+  if (!sel) return;
+
+  const actual = normalizarTexto(sel.value || "todos");
+  sel.innerHTML = `<option value="todos">Todos</option>`;
+
+  const productos = Array.from(
+    new Set(
+      data
+        .map((d) => String(obtenerProducto(d) || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  productos.forEach((p) => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    sel.appendChild(opt);
+  });
+
+  // preserva selección si existe
+  const found = productos.find((p) => normalizarTexto(p) === actual);
+  sel.value = found ? found : "todos";
 }
 
 /* =============================
@@ -306,6 +341,7 @@ function aplicarFiltros() {
   const hastaEl = document.getElementById("filterHasta");
   const paisEl = document.getElementById("filterPais");
   const medioEl = document.getElementById("filterMedio");
+  const productoEl = document.getElementById("filterProducto"); // ✅ nuevo
   const sentimientoEl = document.getElementById("filterSentimiento");
   const usuarioEl = document.getElementById("filterUsuario");
 
@@ -313,6 +349,7 @@ function aplicarFiltros() {
   const hasta = hastaEl ? hastaEl.value : "";
   const pais = paisEl ? normalizarTexto(paisEl.value) : "todos";
   const medio = medioEl ? normalizarTexto(medioEl.value) : "todos";
+  const producto = productoEl ? normalizarTexto(productoEl.value) : "todos"; // ✅ nuevo
   const sentimiento = sentimientoEl ? normalizarTexto(sentimientoEl.value) : "todos";
   const usuario = usuarioEl ? normalizarTexto(usuarioEl.value) : "todos";
 
@@ -330,6 +367,10 @@ function aplicarFiltros() {
 
     if (pais !== "todos" && normalizarTexto(item.pais) !== pais) valido = false;
     if (medio !== "todos" && normalizarTexto(item.medio) !== medio) valido = false;
+
+    // ✅ filtro producto
+    if (producto !== "todos" && normalizarTexto(obtenerProducto(item)) !== producto) valido = false;
+
     if (sentimiento !== "todos" && normalizarTexto(obtenerSentimiento(item)) !== sentimiento) valido = false;
     if (usuario !== "todos" && normalizarTexto(item.email) !== usuario) valido = false;
 
@@ -395,10 +436,12 @@ function renderCharts(data) {
   const paisCount = contarPorCampo(data, "pais");
   const medioCount = contarPorCampo(data, "medio");
   const sentimientoCount = contarPorSentimiento(data);
+  const productoCount = contarPorProducto(data); // ✅ nuevo
 
   const pais = toPercentWithCounts(paisCount);
   const medio = toPercentWithCounts(medioCount);
   const sentimiento = toPercentWithCounts(sentimientoCount);
+  const producto = toPercentWithCounts(productoCount); // ✅ nuevo
 
   const colors = {
     azul: "#2F66F5",
@@ -414,8 +457,9 @@ function renderCharts(data) {
   const c3 = crearGraficoPieSentimiento("chartSentimiento", sentimiento, colors);
   const c4 = crearGraficoGauge(data, "chartMedidor");
   const c5 = crearGraficoBarras("chartCanales", medio, colors);
+  const c6 = crearGraficoPie("chartProducto", producto, [colors.azul, colors.celeste, colors.verde, colors.amarillo, colors.gris]); // ✅ nuevo
 
-  [c1, c2, c3, c4, c5].forEach((c) => c && charts.push(c));
+  [c1, c2, c3, c4, c6, c5].forEach((c) => c && charts.push(c));
 }
 
 /* =============================
@@ -425,6 +469,15 @@ function contarPorCampo(data, campo) {
   const conteo = {};
   data.forEach((row) => {
     const valor = String(row[campo] ?? "Sin dato").trim() || "Sin dato";
+    conteo[valor] = (conteo[valor] || 0) + 1;
+  });
+  return conteo;
+}
+
+function contarPorProducto(data) {
+  const conteo = {};
+  data.forEach((row) => {
+    const valor = String(obtenerProducto(row) ?? "Sin dato").trim() || "Sin dato";
     conteo[valor] = (conteo[valor] || 0) + 1;
   });
   return conteo;
@@ -449,7 +502,7 @@ function contarPorSentimiento(data) {
 
 /* =============================
    PIE GENÉRICO
-   ✅ Leyenda ABAJO (y tamaño estable)
+   - padding mayor para que no se corten % afuera
 ============================= */
 function crearGraficoPie(id, pack, colores) {
   const canvas = document.getElementById(id);
@@ -469,7 +522,7 @@ function crearGraficoPie(id, pack, colores) {
     },
     options: {
       ...baseChartOptions(),
-      layout: { padding: 8 },
+      layout: { padding: 18 }, // ✅ evita recorte de <1% afuera
       plugins: {
         legend: legendBottomConfig(),
         tooltip: {
@@ -484,7 +537,7 @@ function crearGraficoPie(id, pack, colores) {
         },
         percentLabelsPlugin: {
           outsideThreshold: 4,
-          outsideOffset: 20,
+          outsideOffset: 22,
           minArcPx: 26,
           fontSize: 12,
           fillColor: "#111827",
@@ -496,7 +549,6 @@ function crearGraficoPie(id, pack, colores) {
 
 /* =============================
    PIE SENTIMIENTO
-   ✅ Leyenda ABAJO (y tamaño estable)
 ============================= */
 function crearGraficoPieSentimiento(id, pack, colors) {
   const canvas = document.getElementById(id);
@@ -526,7 +578,7 @@ function crearGraficoPieSentimiento(id, pack, colors) {
     },
     options: {
       ...baseChartOptions(),
-      layout: { padding: 8 },
+      layout: { padding: 18 }, // ✅ evita recorte de <1%
       plugins: {
         legend: legendBottomConfig(),
         tooltip: {
@@ -541,7 +593,7 @@ function crearGraficoPieSentimiento(id, pack, colors) {
         },
         percentLabelsPlugin: {
           outsideThreshold: 4,
-          outsideOffset: 20,
+          outsideOffset: 22,
           minArcPx: 26,
           fontSize: 12,
           fillColor: "#111827",
@@ -599,6 +651,7 @@ function crearGraficoBarras(id, pack, colors) {
 
 /* =============================
    GAUGE (%)
+   - padding mayor para que no se corte etiqueta
 ============================= */
 function crearGraficoGauge(data, id) {
   const canvas = document.getElementById(id);
@@ -629,7 +682,7 @@ function crearGraficoGauge(data, id) {
     options: {
       ...baseChartOptions(),
       cutout: "70%",
-      layout: { padding: 10 },
+      layout: { padding: 18 }, // ✅ evita recorte
       plugins: {
         legend: { display: false },
         tooltip: {

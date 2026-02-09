@@ -46,6 +46,14 @@
       </select>
     </div>
 
+    <!-- ✅ PRODUCTO -->
+    <div class="filter-item">
+      <label for="filterProducto">Producto:</label>
+      <select id="filterProducto" name="filterProducto">
+        <option value="todos">Todos</option>
+      </select>
+    </div>
+
     <div class="filter-item">
       <label for="filterSentimiento">Sentimiento:</label>
       <select id="filterSentimiento" name="filterSentimiento">
@@ -115,6 +123,12 @@
   <div class="chart-card">
     <h4>Medidor de Sentimiento Global</h4>
     <canvas id="chartMedidor"></canvas>
+  </div>
+
+  <!-- ✅ NUEVO 6TO GRÁFICO -->
+  <div class="chart-card">
+    <h4>Distribución por Producto</h4>
+    <canvas id="chartProducto"></canvas>
   </div>
 
   <div class="chart-card wide">

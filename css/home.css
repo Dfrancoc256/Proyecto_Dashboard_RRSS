@@ -315,6 +315,13 @@
   max-height: 300px;
 }
 
+/* ✅ Soporte real para .wide (antes no existía y no hacía nada) */
+@media (min-width: 900px) {
+  .chart-card.wide {
+    grid-column: span 2;
+  }
+}
+
 /* ✅ Responsive: baja alto en móvil */
 @media (max-width: 768px) {
   .charts {
@@ -323,6 +330,9 @@
   .chart-card canvas {
     height: 260px;
     max-height: 260px;
+  }
+  .chart-card.wide {
+    grid-column: auto;
   }
 }
 
