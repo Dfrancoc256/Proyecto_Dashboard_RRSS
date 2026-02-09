@@ -49,7 +49,7 @@ function fmtPercent(p) {
 
 
 /* =============================
-   ✅ PLUGIN: % visible SIEMPRE (dentro del pie y sin salirse)
+   ✅ PLUGIN: % visible SIEMPRE 
 ============================= */
 const percentLabelsPlugin = {
   id: "percentLabelsPlugin",
@@ -516,7 +516,7 @@ function crearGraficoPie(id, pack, colores) {
     },
     options: {
       ...baseChartOptions(),
-      layout: { padding: 18 }, // ✅ evita recorte de <1% afuera
+      layout: { padding: 18 }, 
       plugins: {
         legend: legendBottomConfig(),
         tooltip: {
@@ -572,7 +572,7 @@ function crearGraficoPieSentimiento(id, pack, colors) {
     },
     options: {
       ...baseChartOptions(),
-      layout: { padding: 18 }, // ✅ evita recorte de <1%
+      layout: { padding: 18 }, 
       plugins: {
         legend: legendBottomConfig(),
         tooltip: {
