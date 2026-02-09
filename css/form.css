@@ -64,7 +64,7 @@ textarea:focus {
   box-shadow: 0 0 0 4px rgba(47, 102, 245, 0.12);
 }
 
-/* ✅ Botón submit (mantiene tu estilo Vana) */
+/* ✅ Botón submit */
 button[type="submit"] {
   background: linear-gradient(90deg, #2F66F5, #54C0F2);
   color: #fff;
