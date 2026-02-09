@@ -152,7 +152,7 @@
   padding: 12px 14px;
 }
 
-/* ✅ OPCIONAL RECOMENDADO: evita deformación del canvas */
+
 .ana-card-body canvas{
   display: block;
   max-width: 100%;
