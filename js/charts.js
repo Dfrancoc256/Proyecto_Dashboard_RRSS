@@ -43,9 +43,10 @@ function toPercentWithCounts(datasetCounts) {
 function fmtPercent(p) {
   const n = Number(p) || 0;
   if (n === 0) return "0%";
-  if (n < 1) return "<1%";
-  return `${n}%`;
+  if (n < 1) return "1%";
+  return `${n.toFixed(1)}%`;
 }
+
 
 /* =============================
    ✅ PLUGIN: % visible SIEMPRE (dentro del pie y sin salirse)
