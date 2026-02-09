@@ -102,7 +102,7 @@ function setupOtros() {
     { name: "medio", wrap: "medioOtroWrap", other: "medioOtro" },
     { name: "razon", wrap: "razonOtroWrap", other: "razonOtro" },
     { name: "ticket", wrap: "ticketOtroWrap", other: "ticketOtro" },
-    { name: "producto", wrap: "productoOtroWrap", other: "productoOtro" }, // ✅ nuevo
+    { name: "producto", wrap: "productoOtroWrap", other: "productoOtro" },
   ];
 
   map.forEach(cfg => {
@@ -183,7 +183,7 @@ async function onSubmit(e) {
 
   if (!validarSentimiento(form)) return;
 
-  // convierte combos a hidden inputs (para FormData)
+  // Convierte combos a hidden inputs (para FormData)
   document.querySelectorAll(".combo").forEach(combo => {
     const name = combo.getAttribute("data-name");
     const val = combo.querySelector(".combo-input")?.value || "";
@@ -196,33 +196,52 @@ async function onSubmit(e) {
   const medio = String(fd.get("medio") || "").trim();
   const razon = String(fd.get("razon") || "").trim();
   const ticket = String(fd.get("ticket") || "").trim();
-  const producto = String(fd.get("producto") || "").trim();
+
+  let producto = String(fd.get("producto") || "").trim();
+  if (!producto) producto = "Presta"; // default seguro al enviar
 
   const paisFinal = esOtro(pais) ? (String(fd.get("pais_otro") || "").trim() || "Otro") : pais;
   const medioFinal = esOtro(medio) ? (String(fd.get("medio_otro") || "").trim() || "Otro") : medio;
   const razonFinal = esOtro(razon) ? (String(fd.get("razon_otro") || "").trim() || "Otro") : razon;
   const ticketFinal = esOtro(ticket) ? (String(fd.get("ticket_otro") || "").trim() || "Otro") : ticket;
 
+  // Validación producto "Otro"
+  if (esOtro(producto)) {
+    const escrito = String(fd.get("producto_otro") || "").trim();
+    if (!escrito) {
+      alert("⚠️ Debes especificar el producto cuando seleccionas 'Otro'.");
+      document.getElementById("productoOtro")?.focus();
+      return;
+    }
+  }
+
   const productoFinal = esOtro(producto)
     ? (String(fd.get("producto_otro") || "").trim() || "Otro")
     : (producto || "Presta");
 
-  // correo del agente desde sesión (sidebar)
+  // Correo del agente desde sesión (sidebar)
   const emailActual = String(getUsuarioCorreo() || "").trim();
   if (!emailActual) {
     alert("⚠️ No se encontró el correo del agente en sesión (usuarioActivo).");
     return;
   }
 
-  // si NO selecciona "Sí", por seguridad mandamos vacío
+  // Si NO selecciona "Sí", por seguridad mandamos vacío
   const enviarDetalles = esSi(ticketFinal);
   const linkTicket = enviarDetalles ? String(fd.get("link_ticket") || "").trim() : "";
   const notas = enviarDetalles ? String(fd.get("notas") || "").trim() : "";
 
+  // Validación ticket si es "Sí" (al menos link o nota)
+  if (enviarDetalles && !linkTicket && !notas) {
+    alert("⚠️ Si seleccionas 'Sí', ingresa el link del ticket o una nota.");
+    (document.querySelector('input[name="link_ticket"]') || document.querySelector('textarea[name="notas"]'))?.focus();
+    return;
+  }
+
   const payload = {
     "Pais": paisFinal,
     "Medio": medioFinal,
-    "Producto": productoFinal,
+    "Producto": productoFinal, // ✅ coincide con columna "Producto" en Sheets
     "Razon de contacto": razonFinal,
     "¿Necesitó ticket?": ticketFinal,
     "Comentario cliente": String(fd.get("comentario_cliente") || "").trim(),
@@ -245,6 +264,7 @@ async function onSubmit(e) {
       alert("✅ Gestión guardada correctamente");
       form.reset();
       prepararForm();
+      setupProductoDefault(); // asegura Presta tras reset
     } else {
       alert("⚠️ Error: " + (result.message || result.error || "No se pudo guardar"));
     }
