@@ -5,6 +5,82 @@ let chartCanal = null;
 
 const norm = (v) => String(v ?? "").trim().toLowerCase();
 
+/* ✅ NUEVO: normalización para búsqueda (sin acentos + minúsculas + espacios limpios) */
+function normSearch(v) {
+  return String(v ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita acentos
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* ✅ NUEVO: parsea query con:
+   - frases "entre comillas"
+   - OR con |
+   - AND por espacios
+*/
+function parseQuery(qRaw) {
+  const q = normSearch(qRaw);
+  if (!q) return { groups: [] };
+
+  // OR groups por |
+  const orParts = q.split("|").map(s => s.trim()).filter(Boolean);
+
+  // cada grupo es una lista de tokens (AND)
+  const groups = orParts.map(part => {
+    const tokens = [];
+    // extrae frases "..."
+    const re = /"([^"]+)"|(\S+)/g;
+    let m;
+    while ((m = re.exec(part)) !== null) {
+      const tok = (m[1] || m[2] || "").trim();
+      if (tok) tokens.push(tok);
+    }
+    return tokens;
+  }).filter(g => g.length);
+
+  return { groups };
+}
+
+/* ✅ NUEVO: crea regex segura (escape) */
+function escapeRegExp(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/* ✅ NUEVO: matcher "inteligente"
+   - Si query tiene OR: basta que un grupo cumpla
+   - En cada grupo: todos los tokens deben aparecer
+   - Token:
+       - si es frase (contiene espacios) => includes
+       - si es palabra => match por límite de palabra o includes como fallback
+*/
+function matchesSmart(textBlob, qRaw) {
+  const { groups } = parseQuery(qRaw);
+  if (!groups.length) return true;
+
+  const blob = normSearch(textBlob);
+  if (!blob) return false;
+
+  return groups.some(tokens => {
+    return tokens.every(tok => {
+      if (!tok) return true;
+
+      // frase -> includes directo
+      if (tok.includes(" ")) {
+        return blob.includes(tok);
+      }
+
+      // palabra -> word boundary primero
+      const rx = new RegExp(`\\b${escapeRegExp(tok)}\\b`, "i");
+      if (rx.test(blob)) return true;
+
+      // fallback: contiene
+      return blob.includes(tok);
+    });
+  });
+}
+
 function obtenerFecha(valor) {
   if (!valor) return null;
   const s = String(valor).trim();
@@ -395,7 +471,7 @@ function applyFilters() {
   const pais = norm(document.getElementById("anaPais")?.value || "todos");
   const canal = norm(document.getElementById("anaCanal")?.value || "todos");
   const usuario = norm(document.getElementById("anaUsuario")?.value || "todos");
-  const q = norm(document.getElementById("anaBuscar")?.value || "");
+  const qRaw = document.getElementById("anaBuscar")?.value || ""; // ✅ mantiene tu input
 
   const dDesde = desde ? inicioDia(desde) : null;
   const dHasta = hasta ? finDia(hasta) : null;
@@ -411,9 +487,9 @@ function applyFilters() {
     if (canal !== "todos" && norm(r.medio) !== canal) return false;
     if (usuario !== "todos" && norm(r.email) !== usuario) return false;
 
-    if (q) {
-      const blob = norm(`${r.comentario_cliente || ""} ${r.notas || ""}`);
-      if (!blob.includes(q)) return false;
+    // ✅ SOLO CAMBIO: búsqueda inteligente en comentario + notas + razón
+    if (qRaw && !matchesSmart(`${r.razon || ""} ${r.comentario_cliente || ""} ${r.notas || ""}`, qRaw)) {
+      return false;
     }
 
     return true;
@@ -429,7 +505,7 @@ export async function initComentarios() {
   const lista = res?.data?.data ?? res?.data ?? [];
   dataAll = Array.isArray(lista) ? lista : [];
 
-  // poblar selects con data 
+  // poblar selects con data
   setOptions("anaPais", uniqueSorted(dataAll.map(x => String(x.pais || "").trim()).filter(Boolean)));
   setOptions("anaCanal", uniqueSorted(dataAll.map(x => String(x.medio || "").trim()).filter(Boolean)));
   setOptions("anaUsuario", uniqueSorted(dataAll.map(x => String(x.email || "").trim().toLowerCase()).filter(Boolean)));
