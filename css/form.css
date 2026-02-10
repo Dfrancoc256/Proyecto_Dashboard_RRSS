@@ -66,14 +66,13 @@ textarea:focus {
   box-shadow: 0 0 0 4px rgba(47, 102, 245, 0.12);
 }
 
-<<<<<<< HEAD
 /* ===========================
    Botón submit
 =========================== */
-=======
-/* ✅ Botón submit */
->>>>>>> f53567d9d4dd6a619269e1cc75df07078a1fcf5b
-button[type="submit"] {
+.gestion-form button[type="submit"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
   background: linear-gradient(90deg, #2F66F5, #54C0F2);
   color: #fff;
   border: none;
@@ -82,11 +81,36 @@ button[type="submit"] {
   font-weight: 700;
   cursor: pointer;
   transition: 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
 
-button[type="submit"]:hover {
+.gestion-form button[type="submit"]:hover {
   opacity: 0.95;
   transform: translateY(-2px);
+}
+
+.gestion-form button[type="submit"]:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ✅ Spinner en el botón cuando está guardando */
+.gestion-form button[type="submit"].is-loading::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-top-color: #fff;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ===========================

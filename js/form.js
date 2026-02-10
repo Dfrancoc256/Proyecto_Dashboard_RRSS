@@ -45,7 +45,7 @@ function bindComboCloserOnce() {
 }
 
 /**
- * ✅ Nuevo initCombo:
+ * ✅ initCombo:
  * - Flechas ↑↓ para navegar
  * - Enter para seleccionar
  * - Escribir SOLO filtra (no guarda)
@@ -307,6 +307,17 @@ async function onSubmit(e) {
   // ✅ fuerza blur para validar combos antes de leer valores (no guardar lo escrito)
   document.activeElement?.blur?.();
 
+  // ✅ Botón: loading + bloqueo (mejor UX)
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn ? submitBtn.textContent : "";
+  const t0 = performance.now();
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add("is-loading");
+    submitBtn.textContent = "Guardando gestión...";
+  }
+
   // Convierte combos a hidden inputs (para FormData)
   document.querySelectorAll(".combo").forEach(combo => {
     const name = combo.getAttribute("data-name");
@@ -365,7 +376,7 @@ async function onSubmit(e) {
   const payload = {
     "Pais": paisFinal,
     "Medio": medioFinal,
-    "Producto": productoFinal, // ✅ coincide con columna "Producto" en Sheets
+    "Producto": productoFinal,
     "Razon de contacto": razonFinal,
     "¿Necesitó ticket?": ticketFinal,
     "Comentario cliente": String(fd.get("comentario_cliente") || "").trim(),
@@ -385,15 +396,24 @@ async function onSubmit(e) {
     const result = await response.json().catch(() => ({}));
 
     if (response.ok && result.ok === true) {
-      alert("✅ Gestión guardada correctamente");
+      const ms = Math.round(performance.now() - t0);
+      alert(`✅ Gestión guardada correctamente (${ms} ms)`);
+
       form.reset();
       prepararForm();
-      setupProductoDefault(); // asegura Presta tras reset
+      setupProductoDefault();
     } else {
       alert("⚠️ Error: " + (result.message || result.error || "No se pudo guardar"));
     }
   } catch (err) {
     alert("❌ Error al guardar: " + err.message);
+  } finally {
+    // ✅ Restituye botón sí o sí
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("is-loading");
+      submitBtn.textContent = originalBtnText;
+    }
   }
 }
 
