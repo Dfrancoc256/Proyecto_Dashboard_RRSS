@@ -66,9 +66,13 @@ textarea:focus {
   box-shadow: 0 0 0 4px rgba(47, 102, 245, 0.12);
 }
 
+<<<<<<< HEAD
 /* ===========================
    Botón submit
 =========================== */
+=======
+/* ✅ Botón submit */
+>>>>>>> f53567d9d4dd6a619269e1cc75df07078a1fcf5b
 button[type="submit"] {
   background: linear-gradient(90deg, #2F66F5, #54C0F2);
   color: #fff;

@@ -129,14 +129,14 @@
 
 /* ✅ evita que la línea tape el icono/texto */
 .sidebar button {
-  padding-left: 26px; /* antes 22, aquí queda mejor con icono */
+  padding-left: 26px; 
 }
 
 /* =============================
    BOTÓN CERRAR SESIÓN
 ============================= */
 #btnLogout {
-  margin-top: auto; /* ✅ lo empuja abajo */
+  margin-top: auto; 
   text-align: center;
 
   background: linear-gradient(90deg, #FB7185, #F87171);
@@ -233,7 +233,7 @@
   }
 
   .sidebar button.active::before {
-    display: none; /* ✅ la línea puede estorbar en móvil */
+    display: none; 
   }
 
   #btnLogout {

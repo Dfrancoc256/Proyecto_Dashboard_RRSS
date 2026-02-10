@@ -429,7 +429,7 @@ export async function initComentarios() {
   const lista = res?.data?.data ?? res?.data ?? [];
   dataAll = Array.isArray(lista) ? lista : [];
 
-  // poblar selects con data real
+  // poblar selects con data 
   setOptions("anaPais", uniqueSorted(dataAll.map(x => String(x.pais || "").trim()).filter(Boolean)));
   setOptions("anaCanal", uniqueSorted(dataAll.map(x => String(x.medio || "").trim()).filter(Boolean)));
   setOptions("anaUsuario", uniqueSorted(dataAll.map(x => String(x.email || "").trim().toLowerCase()).filter(Boolean)));
