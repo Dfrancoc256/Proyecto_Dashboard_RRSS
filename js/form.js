@@ -58,13 +58,50 @@ function initCombo(combo) {
   const open = () => { list.style.display = "block"; };
   const close = () => { list.style.display = "none"; };
 
+  // ✅ NUEVO: navegación con teclado (↑ ↓) y selección con Enter
+  let activeIndex = -1;
+
+  function visibleItems() {
+    return items.filter(li => li.style.display !== "none");
+  }
+
+  function clearActive() {
+    items.forEach(li => li.classList.remove("active"));
+    activeIndex = -1;
+  }
+
+  function setActive(i) {
+    const vis = visibleItems();
+    clearActive();
+    if (!vis.length) return;
+
+    activeIndex = Math.max(0, Math.min(i, vis.length - 1));
+    vis[activeIndex].classList.add("active");
+    vis[activeIndex].scrollIntoView({ block: "nearest" });
+  }
+
+  function selectItem(li) {
+    if (!li) return;
+    input.value = li.textContent.trim();
+    close();
+    input.dispatchEvent(new Event("change"));
+  }
+
   btn.addEventListener("click", () => {
     if (list.style.display === "block") close();
     else open();
     input.focus();
+
+    // al abrir, activa el primero visible
+    const vis = visibleItems();
+    if (vis.length) setActive(0);
   });
 
-  input.addEventListener("focus", open);
+  input.addEventListener("focus", () => {
+    open();
+    const vis = visibleItems();
+    if (vis.length) setActive(0);
+  });
 
   input.addEventListener("input", () => {
     const q = normalizar(input.value);
@@ -73,13 +110,54 @@ function initCombo(combo) {
       li.style.display = show ? "block" : "none";
     });
     open();
+
+    const vis = visibleItems();
+    if (vis.length) setActive(0);
+    else clearActive();
+  });
+
+  // ✅ NUEVO: teclado
+  input.addEventListener("keydown", (e) => {
+    const vis = visibleItems();
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (list.style.display !== "block") open();
+      if (!vis.length) return;
+      if (activeIndex < 0) setActive(0);
+      else setActive(activeIndex + 1);
+      return;
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (list.style.display !== "block") open();
+      if (!vis.length) return;
+      if (activeIndex < 0) setActive(0);
+      else setActive(activeIndex - 1);
+      return;
+    }
+
+    if (e.key === "Enter") {
+      // seleccionar opción activa
+      if (list.style.display === "block" && vis.length && activeIndex >= 0) {
+        e.preventDefault();
+        selectItem(vis[activeIndex]);
+      }
+      return;
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+      clearActive();
+      return;
+    }
   });
 
   items.forEach(li => {
     li.addEventListener("click", () => {
-      input.value = li.textContent.trim();
-      close();
-      input.dispatchEvent(new Event("change"));
+      selectItem(li);
     });
   });
 }
