@@ -732,7 +732,7 @@ function crearGraficoGauge(data, id) {
     options: {
       ...baseChartOptions(),
       cutout: "70%",
-      layout: { padding: 18 }, // ✅ evita recorte
+      layout: { padding: 26 }, // ✅ evita recorte
       plugins: {
         legend: { display: false },
         tooltip: {
