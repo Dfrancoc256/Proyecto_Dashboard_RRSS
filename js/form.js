@@ -44,6 +44,13 @@ function bindComboCloserOnce() {
   });
 }
 
+/**
+ * ✅ Nuevo initCombo:
+ * - Flechas ↑↓ para navegar
+ * - Enter para seleccionar
+ * - Escribir SOLO filtra (no guarda)
+ * - Si no selecciona una opción válida, revierte al último valor válido
+ */
 function initCombo(combo) {
   if (!combo || combo.dataset.inited === "1") return;
   combo.dataset.inited = "1";
@@ -55,33 +62,147 @@ function initCombo(combo) {
 
   if (!input || !btn || !list) return;
 
+  // ✅ Valor válido (solo cambia cuando se selecciona una opción real)
+  let lastValid = (input.value || "").trim();
+  let activeIndex = -1;
+
   const open = () => { list.style.display = "block"; };
-  const close = () => { list.style.display = "none"; };
+  const close = () => { list.style.display = "none"; clearActive(); };
 
-  btn.addEventListener("click", () => {
-    if (list.style.display === "block") close();
-    else open();
-    input.focus();
-  });
+  function visibleItems() {
+    return items.filter(li => li.style.display !== "none");
+  }
 
-  input.addEventListener("focus", open);
+  function clearActive() {
+    items.forEach(li => li.classList.remove("active"));
+    activeIndex = -1;
+  }
 
-  input.addEventListener("input", () => {
+  function setActive(i) {
+    const vis = visibleItems();
+    clearActive();
+    if (!vis.length) return;
+
+    activeIndex = Math.max(0, Math.min(i, vis.length - 1));
+    vis[activeIndex].classList.add("active");
+    vis[activeIndex].scrollIntoView({ block: "nearest" });
+  }
+
+  function filter() {
     const q = normalizar(input.value);
     items.forEach(li => {
       const show = normalizar(li.textContent).includes(q);
       li.style.display = show ? "block" : "none";
     });
     open();
+    const vis = visibleItems();
+    if (vis.length) setActive(0);
+    else clearActive();
+  }
+
+  function findExact() {
+    const t = normalizar(input.value);
+    return items.find(li => normalizar(li.textContent) === t);
+  }
+
+  function selectValue(value) {
+    input.value = value;
+    lastValid = value; // ✅ solo aquí se “guarda”
+    close();
+    input.dispatchEvent(new Event("change"));
+  }
+
+  // ---- botón ▾ ----
+  btn.addEventListener("click", () => {
+    if (list.style.display === "block") close();
+    else {
+      items.forEach(li => li.style.display = "block");
+      open();
+      const vis = visibleItems();
+      if (vis.length) setActive(0);
+    }
+    input.focus();
   });
 
+  // ---- focus ----
+  input.addEventListener("focus", () => {
+    items.forEach(li => li.style.display = "block");
+    open();
+    const vis = visibleItems();
+    if (vis.length) setActive(0);
+  });
+
+  // ---- escribir SOLO filtra (NO guarda) ----
+  input.addEventListener("input", () => {
+    filter();
+  });
+
+  // ---- click en opción ----
   items.forEach(li => {
-    li.addEventListener("click", () => {
-      input.value = li.textContent.trim();
-      close();
-      input.dispatchEvent(new Event("change"));
+    li.addEventListener("mousedown", (e) => {
+      e.preventDefault(); // evita perder foco antes de seleccionar
+      selectValue(li.textContent.trim());
     });
   });
+
+  // ---- teclado: flechas + enter ----
+  input.addEventListener("keydown", (e) => {
+    const vis = visibleItems();
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (list.style.display !== "block") open();
+      if (!vis.length) return;
+      if (activeIndex < 0) setActive(0);
+      else setActive(activeIndex + 1);
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (list.style.display !== "block") open();
+      if (!vis.length) return;
+      if (activeIndex < 0) setActive(0);
+      else setActive(activeIndex - 1);
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      // Enter selecciona opción activa o exacta
+      if (list.style.display === "block" && vis.length && activeIndex >= 0) {
+        selectValue(vis[activeIndex].textContent.trim());
+      } else {
+        const exact = findExact();
+        if (exact) selectValue(exact.textContent.trim());
+        else input.value = lastValid; // ✅ no guardar lo escrito
+      }
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      input.value = lastValid; // ✅ revierte
+      close();
+    }
+
+    if (e.key === "Tab") {
+      // al salir: si lo escrito no es opción válida, revertir
+      const exact = findExact();
+      if (!exact) input.value = lastValid;
+      close();
+    }
+  });
+
+  // ---- blur: si lo escrito no es opción válida, revertir ----
+  input.addEventListener("blur", () => {
+    setTimeout(() => {
+      const exact = findExact();
+      if (!exact) input.value = lastValid; // ✅ no guardar lo escrito
+      close();
+    }, 120);
+  });
+
+  // Oculta lista por defecto
+  list.style.display = "none";
 }
 
 function validarSentimiento(form) {
@@ -182,6 +303,9 @@ async function onSubmit(e) {
   const form = e.target;
 
   if (!validarSentimiento(form)) return;
+
+  // ✅ fuerza blur para validar combos antes de leer valores (no guardar lo escrito)
+  document.activeElement?.blur?.();
 
   // Convierte combos a hidden inputs (para FormData)
   document.querySelectorAll(".combo").forEach(combo => {

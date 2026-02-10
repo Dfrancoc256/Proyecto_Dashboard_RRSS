@@ -37,7 +37,9 @@ label {
   color: #333;
 }
 
-/* ✅ Inputs base */
+/* ===========================
+   Inputs base
+=========================== */
 select,
 input,
 textarea {
@@ -64,7 +66,9 @@ textarea:focus {
   box-shadow: 0 0 0 4px rgba(47, 102, 245, 0.12);
 }
 
-/* ✅ Botón submit (mantiene tu estilo Vana) */
+/* ===========================
+   Botón submit
+=========================== */
 button[type="submit"] {
   background: linear-gradient(90deg, #2F66F5, #54C0F2);
   color: #fff;
@@ -82,7 +86,7 @@ button[type="submit"]:hover {
 }
 
 /* ===========================
-   ✅ COMBO (select + búsqueda)
+   COMBO (select + búsqueda)
 =========================== */
 .combo {
   position: relative;
@@ -101,6 +105,9 @@ button[type="submit"]:hover {
   background: #F8FAFC;
   font-size: 0.9rem;
   transition: border-color .2s ease, box-shadow .2s ease;
+
+  /* ✅ necesario para flex */
+  flex: 1 1 auto;
 }
 
 .combo-input:focus {
@@ -126,7 +133,9 @@ button[type="submit"]:hover {
   transform: translateY(-1px);
 }
 
-/* Lista desplegable */
+/* ===========================
+   Lista desplegable
+=========================== */
 .combo-list {
   position: absolute;
   left: 0;
@@ -154,11 +163,20 @@ button[type="submit"]:hover {
   transition: background .15s ease, transform .05s ease;
 }
 
+/* Hover con mouse */
 .combo-list li:hover {
   background: #EEF4FF;
 }
 
-/* Scroll barra dentro del dropdown */
+/* ✅ Activo con teclado (↑ ↓) */
+.combo-list li.active {
+  background: #EEF4FF;
+  outline: 2px solid rgba(47, 102, 245, 0.30);
+}
+
+/* ===========================
+   Scroll barra dropdown
+=========================== */
 .combo-list::-webkit-scrollbar {
   width: 8px;
 }
@@ -171,7 +189,9 @@ button[type="submit"]:hover {
   margin-top: 10px;
 }
 
-/* Responsive */
+/* ===========================
+   Responsive
+=========================== */
 @media (max-width: 768px) {
   .gestion-form {
     padding: 18px;
