@@ -36,16 +36,21 @@ function toPercentWithCounts(datasetCounts) {
   const labels = Object.keys(datasetCounts || {});
   const counts = labels.map((k) => Number(datasetCounts[k]) || 0);
   const total = counts.reduce((a, b) => a + b, 0) || 1;
-  const percents = counts.map((v) => +((v / total) * 100).toFixed(1));
+
+  // ✅ NO redondear aquí (así 0.6 queda 0.6, no 1.0)
+  const percents = counts.map((v) => (v / total) * 100);
+
   return { labels, counts, percents, total };
 }
+
 
 function fmtPercent(p) {
   const n = Number(p) || 0;
   if (n === 0) return "0%";
-  if (n < 1) return "1%";
+  if (n < 1) return "<1%";
   return `${n.toFixed(1)}%`;
 }
+
 
 
 /* =============================
@@ -109,7 +114,7 @@ const percentLabelsPlugin = {
           const arcLen = Math.abs(endAngle - startAngle) * outerRadius;
 
           // ✅ Decide si va afuera
-          const shouldGoOutside = (val <= outsideThreshold) || (arcLen <= minArcPx);
+          const shouldGoOutside = (outsideThreshold > 0 && val <= outsideThreshold) || (arcLen <= minArcPx);
 
           // ========= DENTRO =========
           if (!shouldGoOutside) {
@@ -586,8 +591,6 @@ function crearGraficoPie(id, pack, colores) {
         percentLabelsPlugin: {
           hideBelowPercent: 1.0,     // < 1% no se muestra
           outsideThreshold: 4,       // <= 4% se va afuera
-          outsideOffset: 26,         // distancia del texto afuera
-          minArcPx: 26,              // si el arco es muy pequeño -> afuera
           fontSize: 12,
           fillColor: "#111827",
         },
