@@ -37,12 +37,11 @@ function toPercentWithCounts(datasetCounts) {
   const counts = labels.map((k) => Number(datasetCounts[k]) || 0);
   const total = counts.reduce((a, b) => a + b, 0) || 1;
 
-  // ✅ NO redondear aquí (así 0.6 queda 0.6, no 1.0)
+  // ✅ NO redondear aquí (para que hideBelowPercent funcione de verdad)
   const percents = counts.map((v) => (v / total) * 100);
 
   return { labels, counts, percents, total };
 }
-
 
 function fmtPercent(p) {
   const n = Number(p) || 0;
@@ -51,13 +50,11 @@ function fmtPercent(p) {
   return `${n.toFixed(1)}%`;
 }
 
-
-
 /* =============================
-   ✅ PLUGIN: % inteligente
-   - Si es MUY pequeño: oculta
-   - Si es pequeño: muestra AFUERA con línea
-   - Si es normal: muestra DENTRO
+   ✅ PLUGIN: % solo si CABE
+   - Oculta si es pequeño
+   - Oculta si el slice NO tiene espacio (arcLen muy pequeño)
+   - NO dibuja “afuera” (para evitar amontonamiento)
 ============================= */
 const percentLabelsPlugin = {
   id: "percentLabelsPlugin",
@@ -74,10 +71,10 @@ const percentLabelsPlugin = {
     const shadowOffsetY = typeof opts.shadowOffsetY === "number" ? opts.shadowOffsetY : 1;
 
     // ✅ Reglas configurables
-    const hideBelowPercent = typeof opts.hideBelowPercent === "number" ? opts.hideBelowPercent : 1.0; // < 1% oculta
-    const outsideThreshold = typeof opts.outsideThreshold === "number" ? opts.outsideThreshold : 4;     // <= 4% afuera
-    const outsideOffset = typeof opts.outsideOffset === "number" ? opts.outsideOffset : 22;            // distancia afuera
-    const minArcPx = typeof opts.minArcPx === "number" ? opts.minArcPx : 26;                            // si arco muy pequeño => afuera
+    const hideBelowPercent =
+      typeof opts.hideBelowPercent === "number" ? opts.hideBelowPercent : 2.0; // por defecto 2%
+    const minArcPx =
+      typeof opts.minArcPx === "number" ? opts.minArcPx : 40; // si no cabe, no dibujar
 
     const pad = typeof opts.clampPadding === "number" ? opts.clampPadding : 10;
     const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
@@ -95,7 +92,7 @@ const percentLabelsPlugin = {
         const val = Number(dataset.data?.[index]) || 0;
         if (val <= 0) return;
 
-        // ✅ Si es MUY pequeño, no mostramos nada
+        // ✅ Si es pequeño, no dibujar
         if (val < hideBelowPercent) return;
 
         const text = fmtPercent(val);
@@ -110,73 +107,25 @@ const percentLabelsPlugin = {
           const { x, y, startAngle, endAngle, outerRadius, innerRadius } = props;
           const mid = (startAngle + endAngle) / 2;
 
-          // Arco aproximado en px
+          // ✅ espacio aproximado del slice
           const arcLen = Math.abs(endAngle - startAngle) * outerRadius;
 
-          // ✅ Decide si va afuera
-          const shouldGoOutside = (outsideThreshold > 0 && val <= outsideThreshold) || (arcLen <= minArcPx);
+          // ✅ si no cabe el texto, NO dibujar nada
+          if (arcLen <= minArcPx) return;
 
-          // ========= DENTRO =========
-          if (!shouldGoOutside) {
-            const rInside = innerRadius + (outerRadius - innerRadius) * 0.55;
-            let tx = x + Math.cos(mid) * rInside;
-            let ty = y + Math.sin(mid) * rInside;
+          // ✅ SOLO dentro
+          const rInside = innerRadius + (outerRadius - innerRadius) * 0.55;
+          let tx = x + Math.cos(mid) * rInside;
+          let ty = y + Math.sin(mid) * rInside;
 
-            if (chartArea) {
-              tx = clamp(tx, chartArea.left + pad, chartArea.right - pad);
-              ty = clamp(ty, chartArea.top + pad, chartArea.bottom - pad);
-            }
-
-            ctx.save();
-            ctx.font = `700 ${fontSize}px ${fontFamily}`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = fillColor;
-
-            ctx.shadowColor = shadowColor;
-            ctx.shadowBlur = shadowBlur;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = shadowOffsetY;
-
-            ctx.fillText(text, tx, ty);
-            ctx.restore();
-            return;
-          }
-
-          // ========= AFUERA =========
-          const rEdge = outerRadius + 2; // punto en el borde
-          const rText = outerRadius + outsideOffset;
-
-          const x1 = x + Math.cos(mid) * rEdge;
-          const y1 = y + Math.sin(mid) * rEdge;
-
-          let tx = x + Math.cos(mid) * rText;
-          let ty = y + Math.sin(mid) * rText;
-
-          // Alineación según cuadrante
-          const isRight = Math.cos(mid) >= 0;
-          const textAlign = isRight ? "left" : "right";
-
-          // Clamp para que no se corte
           if (chartArea) {
             tx = clamp(tx, chartArea.left + pad, chartArea.right - pad);
             ty = clamp(ty, chartArea.top + pad, chartArea.bottom - pad);
           }
 
-          // Línea guía
-          ctx.save();
-          ctx.beginPath();
-          ctx.lineWidth = 1.5;
-          ctx.strokeStyle = "rgba(17,24,39,0.35)";
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(tx, ty);
-          ctx.stroke();
-          ctx.restore();
-
-          // Texto afuera
           ctx.save();
           ctx.font = `700 ${fontSize}px ${fontFamily}`;
-          ctx.textAlign = textAlign;
+          ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillStyle = fillColor;
 
@@ -185,7 +134,7 @@ const percentLabelsPlugin = {
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = shadowOffsetY;
 
-          ctx.fillText(text, tx + (isRight ? 6 : -6), ty);
+          ctx.fillText(text, tx, ty);
           ctx.restore();
           return;
         }
@@ -209,7 +158,6 @@ const percentLabelsPlugin = {
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = shadowOffsetY;
 
-          // En barras sí mostramos siempre
           ctx.fillText(text, tx, ty);
           ctx.restore();
         }
@@ -225,8 +173,6 @@ try {
 } catch {
   try { Chart.register(percentLabelsPlugin); } catch {}
 }
-
-
 
 /* =============================
    ✅ Leyenda abajo (estable)
@@ -555,7 +501,6 @@ function contarPorSentimiento(data) {
 
 /* =============================
    PIE GENÉRICO
-   - padding mayor para que no se corten % afuera
 ============================= */
 function crearGraficoPie(id, pack, colores) {
   const canvas = document.getElementById(id);
@@ -575,7 +520,7 @@ function crearGraficoPie(id, pack, colores) {
     },
     options: {
       ...baseChartOptions(),
-      layout: { padding: 18 }, 
+      layout: { padding: 18 },
       plugins: {
         legend: legendBottomConfig(),
         tooltip: {
@@ -589,8 +534,8 @@ function crearGraficoPie(id, pack, colores) {
           },
         },
         percentLabelsPlugin: {
-          hideBelowPercent: 1.0,     // < 1% no se muestra
-          outsideThreshold: 4,       // <= 4% se va afuera
+          hideBelowPercent: 2.0, // ✅ solo si vale >=2%
+          minArcPx: 40,          // ✅ solo si cabe en el slice
           fontSize: 12,
           fillColor: "#111827",
         },
@@ -630,7 +575,7 @@ function crearGraficoPieSentimiento(id, pack, colors) {
     },
     options: {
       ...baseChartOptions(),
-      layout: { padding: 18 }, 
+      layout: { padding: 18 },
       plugins: {
         legend: legendBottomConfig(),
         tooltip: {
@@ -644,10 +589,8 @@ function crearGraficoPieSentimiento(id, pack, colors) {
           },
         },
         percentLabelsPlugin: {
-          hideBelowPercent: 1.0,
-          outsideThreshold: 4,
-          outsideOffset: 26,
-          minArcPx: 26,
+          hideBelowPercent: 2.0,
+          minArcPx: 40,
           fontSize: 12,
           fillColor: "#111827",
         },
@@ -704,7 +647,6 @@ function crearGraficoBarras(id, pack, colors) {
 
 /* =============================
    GAUGE (%)
-   - padding mayor para que no se corte etiqueta
 ============================= */
 function crearGraficoGauge(data, id) {
   const canvas = document.getElementById(id);
@@ -715,9 +657,9 @@ function crearGraficoGauge(data, id) {
   const negativas = data.filter((d) => normalizarTexto(obtenerSentimiento(d)) === "negativo").length;
 
   const total = positivas + neutrales + negativas || 1;
-  const pPos = +((positivas / total) * 100).toFixed(1);
-  const pNeu = +((neutrales / total) * 100).toFixed(1);
-  const pNeg = +((negativas / total) * 100).toFixed(1);
+  const pPos = (positivas / total) * 100;
+  const pNeu = (neutrales / total) * 100;
+  const pNeg = (negativas / total) * 100;
 
   return new Chart(canvas, {
     type: "doughnut",
@@ -735,7 +677,7 @@ function crearGraficoGauge(data, id) {
     options: {
       ...baseChartOptions(),
       cutout: "70%",
-      layout: { padding: 26 }, // ✅ evita recorte
+      layout: { padding: 26 },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -749,10 +691,8 @@ function crearGraficoGauge(data, id) {
           },
         },
         percentLabelsPlugin: {
-          hideBelowPercent: 1.0,
-          outsideThreshold: 3,
-          outsideOffset: 18,
-          minArcPx: 22,
+          hideBelowPercent: 2.0,
+          minArcPx: 34,
           fontSize: 12,
           fillColor: "#111827",
         },
