@@ -218,6 +218,7 @@ async function cargarDatos() {
   try {
     mostrarEstado("Cargando datos...", "ok");
 
+    // ✅ carga inicial (backend: últimos 5 días)
     const res = await obtenerDatosDashboard();
 
     if (res.status === "success") {
@@ -303,7 +304,7 @@ function poblarFiltroUsuarios(data) {
 }
 
 /* =============================
-   ✅ FILTRO PRODUCTO (nuevo)
+   ✅ FILTRO PRODUCTO
 ============================= */
 function poblarFiltroProducto(data) {
   const sel = document.getElementById("filterProducto");
@@ -334,8 +335,10 @@ function poblarFiltroProducto(data) {
 
 /* =============================
    FILTROS
+   ✅ Si hay desde/hasta => recarga desde backend con ?from&to
+   ✅ Si NO hay fechas => filtra local (lo ya cargado)
 ============================= */
-function aplicarFiltros() {
+async function aplicarFiltros() {
   const desdeEl = document.getElementById("filterDesde");
   const hastaEl = document.getElementById("filterHasta");
   const paisEl = document.getElementById("filterPais");
@@ -352,10 +355,64 @@ function aplicarFiltros() {
   const sentimiento = sentimientoEl ? normalizarTexto(sentimientoEl.value) : "todos";
   const usuario = usuarioEl ? normalizarTexto(usuarioEl.value) : "todos";
 
+  // Si el usuario seleccionó rango, pedimos ese rango al backend
+  if (desde && hasta) {
+    try {
+      mostrarEstado("Cargando datos del rango...", "info");
+
+      const res = await obtenerDatosDashboard(desde, hasta);
+      const lista = res?.data?.data ?? res?.data ?? [];
+      const base = Array.isArray(lista) ? lista : [];
+
+      //  Actualizamos base en memoria para que los filtros (usuario/producto) se ajusten al rango
+      datosGlobales = base;
+
+      poblarFiltroUsuarios(datosGlobales);
+      poblarFiltroProducto(datosGlobales);
+
+      //  Ahora aplicamos los demás filtros sobre ese rango
+      const filtradosRango = filtrarLocal(base, {
+        desde,
+        hasta,
+        pais,
+        medio,
+        producto,
+        sentimiento,
+        usuario,
+      });
+
+      renderDashboard(filtradosRango);
+      ocultarEstado();
+    } catch (err) {
+      mostrarEstado("Error: " + err.message, "error");
+    }
+    return;
+  }
+
+  // ✅ Sin fechas: filtra lo ya cargado (últimos 5 días por defecto)
+  const filtrados = filtrarLocal(datosGlobales, {
+    desde,
+    hasta,
+    pais,
+    medio,
+    producto,
+    sentimiento,
+    usuario,
+  });
+
+  renderDashboard(filtrados);
+}
+
+/* =============================
+   ✅ FILTRO LOCAL (reutilizable)
+============================= */
+function filtrarLocal(data, filtros) {
+  const { desde, hasta, pais, medio, producto, sentimiento, usuario } = filtros;
+
   const dDesde = desde ? inicioDelDia(desde) : null;
   const dHasta = hasta ? finDelDia(hasta) : null;
 
-  const filtrados = datosGlobales.filter((item) => {
+  return data.filter((item) => {
     let valido = true;
 
     const dItem = parseFechaSheets(item.time);
@@ -375,8 +432,6 @@ function aplicarFiltros() {
 
     return valido;
   });
-
-  renderDashboard(filtrados);
 }
 
 /* =============================
@@ -435,12 +490,12 @@ function renderCharts(data) {
   const paisCount = contarPorCampo(data, "pais");
   const medioCount = contarPorCampo(data, "medio");
   const sentimientoCount = contarPorSentimiento(data);
-  const productoCount = contarPorProducto(data); // ✅ nuevo
+  const productoCount = contarPorProducto(data);
 
   const pais = toPercentWithCounts(paisCount);
   const medio = toPercentWithCounts(medioCount);
   const sentimiento = toPercentWithCounts(sentimientoCount);
-  const producto = toPercentWithCounts(productoCount); // ✅ nuevo
+  const producto = toPercentWithCounts(productoCount);
 
   const colors = {
     azul: "#2F66F5",
@@ -456,7 +511,7 @@ function renderCharts(data) {
   const c3 = crearGraficoPieSentimiento("chartSentimiento", sentimiento, colors);
   const c4 = crearGraficoGauge(data, "chartMedidor");
   const c5 = crearGraficoBarras("chartCanales", medio, colors);
-  const c6 = crearGraficoPie("chartProducto", producto, [colors.azul, colors.celeste, colors.verde, colors.amarillo, colors.gris]); // ✅ nuevo
+  const c6 = crearGraficoPie("chartProducto", producto, [colors.azul, colors.celeste, colors.verde, colors.amarillo, colors.gris]);
 
   [c1, c2, c3, c4, c6, c5].forEach((c) => c && charts.push(c));
 }
