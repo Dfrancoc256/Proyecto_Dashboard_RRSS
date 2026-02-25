@@ -1,7 +1,7 @@
 // =============================
 // 🌐 CONFIGURACIÓN GLOBAL
 // =============================
-// Base de la API (pasa por Nginx). No pongas dominio ni puerto.
+// Base de la API (pasa por Nginx).
 const API_BASE = "/api";
 
 // =============================
@@ -17,7 +17,7 @@ async function realizarLogin(correo, password) {
 
   const data = await res.json().catch(() => ({}));
 
-  // Si ya viene en formato {status:...} lo respetamos
+  // Si ya viene en formato {status:...}
   if (data.status) return data;
 
   // Backend actual: {ok:true}
@@ -41,7 +41,7 @@ function normalizarKey(h) {
     .replace(/\s+/g, " ")
     .trim();
 
-  // 🔑 Llaves que usa tu frontend (charts.js)
+  // 🔑 Llaves que usa el frontend (charts.js)
   if (k === "pais") return "pais";
   if (k === "medio") return "medio";
   if (k === "sentimiento" || k === "sentimientos") return "sentimientos";
@@ -61,9 +61,14 @@ function normalizarKey(h) {
 
 // =============================
 // 📊 OBTENER DATOS
+// ✅ Ahora soporta rango opcional: from/to (YYYY-MM-DD)
 // =============================
-async function obtenerDatosDashboard() {
-  const res = await fetch(`${API_BASE}/responses`, {
+async function obtenerDatosDashboard(from = "", to = "") {
+  const qs = from && to
+    ? `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    : "";
+
+  const res = await fetch(`${API_BASE}/responses${qs}`, {
     method: "GET",
     credentials: "include",
     cache: "no-store",
